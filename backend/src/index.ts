@@ -34,6 +34,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// API health (useful when proxying /api)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+})
+
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/ebay', ebayRoutes);
