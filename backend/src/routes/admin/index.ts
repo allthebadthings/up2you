@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../../db/supabase.js'
 import { configService } from '../../services/config.js'
+import { shopifyService } from '../../services/shopify.js'
 
 const router = Router()
 
@@ -229,6 +230,47 @@ router.post('/config/:service', async (req, res) => {
   try {
     const updated = await configService.updateConfig(service, config, is_active)
     res.json(updated)
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.post('/shopify/sync', async (req, res) => {
+  try {
+    const configured = await shopifyService.isConfigured()
+    if (!configured) {
+      res.status(503).json({ error: 'Shopify integration not configured' })
+      return
+    }
+    if (!useDb) {
+      res.status(503).json({ error: 'Database not configured' })
+      return
+    }
+    const products = await shopifyService.getProducts()
+    const payload = products.map(p => ({
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      category: p.category,
+      metal_type: p.metal_type,
+      gemstone: p.gemstone,
+      weight: p.weight,
+      images: p.images,
+      sku: p.sku,
+      stock_quantity: p.stock_quantity,
+      is_featured: p.is_featured,
+      is_bundle: p.is_bundle,
+      bundle_discount: p.bundle_discount,
+    }))
+    const { data, error } = await supabase
+      .from('products')
+      .upsert(payload, { onConflict: 'sku' })
+      .select()
+    if (error) {
+      res.status(500).json({ error: error.message })
+      return
+    }
+    res.json({ count: data?.length || 0 })
   } catch (e: any) {
     res.status(500).json({ error: e.message })
   }

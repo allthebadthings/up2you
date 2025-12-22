@@ -108,7 +108,29 @@ export default function AdminProducts() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Products</h1>
-        <Button onClick={() => setEditing({})}>Add Product</Button>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              try {
+                setLoading(true)
+                const res = await fetch('/api/admin/shopify/sync', {
+                  method: 'POST',
+                  headers
+                })
+                const data = await res.json()
+                setLoading(false)
+                fetchProducts()
+                alert(`Synced ${data.count || 0} products from Shopify`)
+              } catch {
+                setLoading(false)
+              }
+            }}
+          >
+            Pull Shopify Data
+          </Button>
+          <Button onClick={() => setEditing({})}>Add Product</Button>
+        </div>
       </div>
 
       {(editing !== null) && (
