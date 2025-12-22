@@ -1,5 +1,6 @@
 # Up2You deployment
 deploy/minimal
+!deploy/minimal/jewelry/src/pages/admin/Products.tsx
 
 # Node and builds
 node_modules/
