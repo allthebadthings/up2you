@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Button, Input, Card } from '../../components/ui'
+
+const ITEMS_PER_PAGE = 20
+
+type SortField = 'name' | 'price' | 'stock_quantity' | 'category' | 'created_at'
+type SortDirection = 'asc' | 'desc'
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([])
@@ -7,6 +12,9 @@ export default function AdminProducts() {
   const [editing, setEditing] = useState<any>(null)
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
   const [quickPrice, setQuickPrice] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   // Form state
   const [formData, setFormData] = useState({
@@ -43,6 +51,44 @@ export default function AdminProducts() {
   useEffect(() => {
     fetchProducts()
   }, [])
+
+  // Sort and paginate products
+  const sortedProducts = useMemo(() => {
+    const sorted = [...products].sort((a, b) => {
+      let aVal = a[sortField]
+      let bVal = b[sortField]
+
+      // Handle null/undefined
+      if (aVal == null) aVal = ''
+      if (bVal == null) bVal = ''
+
+      // Handle strings
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase()
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase()
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [products, sortField, sortDirection])
+
+  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE)
+  const paginatedProducts = sortedProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
+  // Reset to page 1 when sort changes
+  const handleSortChange = (field: SortField) => {
+    if (field === sortField) {
+      setSortDirection(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+    setCurrentPage(1)
+  }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -182,7 +228,9 @@ export default function AdminProducts() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Products</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          Products <span className="text-sm font-normal text-gray-500">({products.length} total)</span>
+        </h1>
         <div className="flex gap-2">
           <Button
             variant="secondary"
@@ -206,6 +254,32 @@ export default function AdminProducts() {
           </Button>
           <Button onClick={() => setEditing({})}>Add Product</Button>
         </div>
+      </div>
+
+      {/* Sort Controls */}
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-gray-600 dark:text-gray-400">Sort by:</span>
+        {[
+          { field: 'name' as SortField, label: 'Name' },
+          { field: 'price' as SortField, label: 'Price' },
+          { field: 'stock_quantity' as SortField, label: 'Stock' },
+          { field: 'category' as SortField, label: 'Category' },
+        ].map(({ field, label }) => (
+          <button
+            key={field}
+            onClick={() => handleSortChange(field)}
+            className={`px-3 py-1 rounded ${
+              sortField === field
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
+            }`}
+          >
+            {label}
+            {sortField === field && (
+              <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       {(editing !== null) && (
@@ -319,7 +393,7 @@ export default function AdminProducts() {
 
       <div className="bg-white dark:bg-neutral-800 shadow overflow-hidden sm:rounded-md border border-gray-200 dark:border-neutral-700">
         <ul className="divide-y divide-gray-200 dark:divide-neutral-700">
-          {products.map((product) => (
+          {paginatedProducts.map((product) => (
             <li key={product.id}>
               <div className="px-4 py-4 flex items-center sm:px-6">
                 {/* Product thumbnail */}
@@ -419,6 +493,52 @@ export default function AdminProducts() {
           ))}
         </ul>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white dark:bg-neutral-800 px-4 py-3 border border-gray-200 dark:border-neutral-700 rounded-md">
+          <div className="text-sm text-gray-700 dark:text-gray-300">
+            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, sortedProducts.length)} of {sortedProducts.length} products
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setCurrentPage(p => p - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="flex items-center px-3 text-sm text-gray-700 dark:text-gray-300">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setCurrentPage(p => p + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
