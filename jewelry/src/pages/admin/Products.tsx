@@ -5,7 +5,9 @@ export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<any>(null)
-  
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
+  const [quickPrice, setQuickPrice] = useState('')
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -79,6 +81,33 @@ export default function AdminProducts() {
   const removeImage = (index: number) => {
     const newImages = formData.images.filter((_, i) => i !== index)
     setFormData({...formData, images: newImages})
+  }
+
+  const startQuickPriceEdit = (productId: string, currentPrice: number) => {
+    setEditingPriceId(productId)
+    setQuickPrice(String(currentPrice))
+  }
+
+  const saveQuickPrice = async (productId: string) => {
+    try {
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ price: Number(quickPrice) })
+      })
+      if (res.ok) {
+        setEditingPriceId(null)
+        setQuickPrice('')
+        fetchProducts()
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cancelQuickPriceEdit = () => {
+    setEditingPriceId(null)
+    setQuickPrice('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -311,14 +340,53 @@ export default function AdminProducts() {
                         {product.category}
                       </p>
                     </div>
-                    <div className="mt-2 flex">
+                    <div className="mt-2 flex items-center gap-2">
                       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <p>
-                          ${product.price} • Stock: {product.stock_quantity}
-                          {product.images && product.images.length > 0 && (
-                            <span className="ml-2">• {product.images.length} image{product.images.length > 1 ? 's' : ''}</span>
-                          )}
-                        </p>
+                        {editingPriceId === product.id ? (
+                          <div className="flex items-center gap-1">
+                            <span>$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={quickPrice}
+                              onChange={(e) => setQuickPrice(e.target.value)}
+                              className="w-20 px-2 py-1 border border-gray-300 dark:border-neutral-600 rounded text-sm dark:bg-neutral-700 dark:text-white"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveQuickPrice(product.id)
+                                if (e.key === 'Escape') cancelQuickPriceEdit()
+                              }}
+                            />
+                            <button
+                              onClick={() => saveQuickPrice(product.id)}
+                              className="text-green-600 hover:text-green-700 font-bold"
+                              title="Save"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={cancelQuickPriceEdit}
+                              className="text-red-600 hover:text-red-700 font-bold"
+                              title="Cancel"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <p>
+                            <button
+                              onClick={() => startQuickPriceEdit(product.id, product.price)}
+                              className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline cursor-pointer"
+                              title="Click to edit price"
+                            >
+                              ${product.price}
+                            </button>
+                            {' • Stock: '}{product.stock_quantity}
+                            {product.images && product.images.length > 0 && (
+                              <span className="ml-2">• {product.images.length} image{product.images.length > 1 ? 's' : ''}</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
