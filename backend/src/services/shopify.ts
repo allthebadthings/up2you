@@ -95,40 +95,44 @@ export const shopifyService = {
     if (!config) {
       throw new Error('Shopify is not configured')
     }
-    const shopify = shopifyApi({
-      apiKey: config.apiKey || 'dummy_key',
-      apiSecretKey: config.apiSecret || 'dummy_secret',
-      scopes: ['write_products'],
-      hostName: config.shopDomain,
-      apiVersion: ApiVersion.January25,
-      isEmbeddedApp: false,
-    })
-    const session = new Session({
-      id: 'offline_session',
-      shop: config.shopDomain,
-      state: 'state',
-      isOnline: false,
-      accessToken: config.accessToken,
-    })
-    const client = new shopify.clients.Rest({ session })
-    const payload: any = {
-      product: {
-        title: product.name,
-        body_html: product.description || '',
-        product_type: product.category || 'Uncategorized',
-        variants: [
-          {
-            price: String(product.price ?? 0),
-            sku: product.sku || '',
-          },
-        ],
-        images: (product.images && product.images.length > 0) ? product.images.map((src) => ({ src })) : [],
-      },
+
+    try {
+      // Use direct HTTP request instead of SDK (more reliable with custom app credentials)
+      const url = `https://${config.shopDomain}/admin/api/2025-01/products.json`;
+      const payload = {
+        product: {
+          title: product.name,
+          body_html: product.description || '',
+          product_type: product.category || 'Uncategorized',
+          variants: [
+            {
+              price: String(product.price ?? 0),
+              sku: product.sku || '',
+            },
+          ],
+          images: (product.images && product.images.length > 0) ? product.images.map((src) => ({ src })) : [],
+        },
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Shopify-Access-Token': config.accessToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Shopify API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.product;
+    } catch (error) {
+      console.error('Error creating Shopify product:', error);
+      throw error;
     }
-    const res = await client.post({
-      path: 'products',
-      data: payload,
-    })
-    return (res.body as any).product
   }
 };
