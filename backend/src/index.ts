@@ -46,6 +46,7 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/ebay', ebayRoutes);
 app.use('/api/admin', requireAdmin, adminRoutes);
+console.log('Routes mounted: /api/stripe, /api/shopify, /api/ebay, /api/admin')
 
 
 app.get('/api/auth/google/start', (req, res) => {

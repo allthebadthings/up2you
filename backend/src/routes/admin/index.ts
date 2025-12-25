@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { supabase } from '../../db/supabase.js'
 import { configService } from '../../services/config.js'
+import { validateAiConfig } from '../../services/ai.js'
+import { generateProductDescription } from '../../services/ai.js'
 import { shopifyService } from '../../services/shopify.js'
 import multer from 'multer'
 import path from 'path'
@@ -219,6 +221,48 @@ router.patch('/products/:id', async (req, res) => {
   }
 })
 
+router.post('/products/:id/generate-description', async (req, res) => {
+  try {
+    const { id } = req.params
+    const options = {
+      agentId: req.body?.agentId,
+      tone: req.body?.tone,
+      language: req.body?.language,
+      keywords: req.body?.keywords,
+      maxLength: req.body?.maxLength
+    }
+    let product: any = null
+    if (useDb) {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (error) {
+        res.status(500).json({ error: error.message })
+        return
+      }
+      if (!data) {
+        res.status(404).json({ error: 'Product not found' })
+        return
+      }
+      product = data
+    } else {
+      product = localProducts.find(p => p.id === id)
+      if (!product) {
+        res.status(404).json({ error: 'Product not found' })
+        return
+      }
+    }
+
+    const aiCfg = await configService.getConfig('ai')
+    const description = await generateProductDescription(product, options, aiCfg?.config || null)
+    res.json({ description })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 router.delete('/products/:id', async (req, res) => {
     const { id } = req.params
 
@@ -264,6 +308,12 @@ router.get('/config/:service', async (req, res) => {
     res.json({ service, config: {}, is_active: false })
     return
   }
+  if (service === 'ai' && config.config && typeof config.config === 'object') {
+    const masked = { ...config.config }
+    if (masked.apiKey) masked.apiKey = '****'
+    res.json({ service, config: masked, is_active: config.is_active })
+    return
+  }
   res.json(config)
 })
 
@@ -272,7 +322,16 @@ router.post('/config/:service', async (req, res) => {
   const { config, is_active } = req.body
 
   try {
-    const updated = await configService.updateConfig(service, config, is_active)
+    let toSave = config
+    if (service === 'ai') {
+      const existing = await configService.getConfig('ai')
+      const merged = {
+        ...config,
+        apiKey: config?.apiKey && config.apiKey !== '****' ? config.apiKey : (existing?.config?.apiKey || '')
+      }
+      toSave = validateAiConfig(merged)
+    }
+    const updated = await configService.updateConfig(service, toSave, is_active)
     res.json(updated)
   } catch (e: any) {
     res.status(500).json({ error: e.message })
