@@ -30,14 +30,7 @@ export default function AdminProducts() {
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
-  const [aiAgents, setAiAgents] = useState<any[]>([])
   const [aiActive, setAiActive] = useState(false)
-  const [aiOptions, setAiOptions] = useState({
-    agentId: '',
-    tone: 'neutral',
-    language: 'en',
-    keywords: '' as any
-  })
 
   const headers = {
     'x-admin-token': localStorage.getItem('admin_token') || '',
@@ -65,12 +58,9 @@ export default function AdminProducts() {
     fetch('/api/admin/config/ai', { headers })
       .then(res => res.json())
       .then(data => {
-        const cfg = data?.config || {}
-        setAiAgents(Array.isArray(cfg.agents) ? cfg.agents : [])
         setAiActive(Boolean(data?.is_active))
       })
       .catch(() => {
-        setAiAgents([])
         setAiActive(false)
       })
   }, [])
@@ -321,9 +311,10 @@ export default function AdminProducts() {
               onChange={(value) => setFormData({...formData, description: value})}
             />
             {editing?.id && (
-              <div className="flex items-center gap-2">
+              <div className="flex justify-end">
                 <Button
                   type="button"
+                  size="sm"
                   variant="secondary"
                   onClick={async () => {
                     if (!aiActive) {
@@ -332,16 +323,10 @@ export default function AdminProducts() {
                     }
                     try {
                       setAiLoading(true)
-                      const body: any = {
-                        agentId: aiOptions.agentId || undefined,
-                        tone: aiOptions.tone || undefined,
-                        language: aiOptions.language || undefined,
-                        keywords: aiOptions.keywords ? String(aiOptions.keywords).split(',').map((s) => s.trim()).filter(Boolean) : undefined
-                      }
                       const res = await fetch(`/api/admin/products/${editing.id}/generate-description`, {
                         method: 'POST',
                         headers,
-                        body: JSON.stringify(body)
+                        body: JSON.stringify({})
                       })
                       const data = await res.json()
                       if (data.description) {
@@ -349,7 +334,7 @@ export default function AdminProducts() {
                       } else {
                         alert(data.error || 'AI did not return a description')
                       }
-                    } catch (e) {
+                    } catch {
                       alert('Failed to generate description')
                     } finally {
                       setAiLoading(false)
@@ -357,42 +342,8 @@ export default function AdminProducts() {
                   }}
                   disabled={aiLoading}
                 >
-                  {aiLoading ? 'Generating…' : 'Generate with AI'}
+                  {aiLoading ? 'Generating…' : 'Generate Description'}
                 </Button>
-                <select
-                  value={aiOptions.agentId}
-                  onChange={(e) => setAiOptions({ ...aiOptions, agentId: e.target.value })}
-                  className="px-2 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white"
-                >
-                  <option value="">Default</option>
-                  {aiAgents.map((a: any) => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={aiOptions.tone}
-                  onChange={(e) => setAiOptions({ ...aiOptions, tone: e.target.value })}
-                  className="px-2 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white"
-                >
-                  <option value="neutral">Neutral</option>
-                  <option value="friendly">Friendly</option>
-                  <option value="luxury">Luxury</option>
-                  <option value="technical">Technical</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Language (e.g. en)"
-                  value={aiOptions.language}
-                  onChange={(e) => setAiOptions({ ...aiOptions, language: e.target.value })}
-                  className="px-2 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white"
-                />
-                <input
-                  type="text"
-                  placeholder="Keywords comma-separated"
-                  value={aiOptions.keywords}
-                  onChange={(e) => setAiOptions({ ...aiOptions, keywords: e.target.value })}
-                  className="flex-1 px-2 py-2 border border-gray-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-700 text-gray-900 dark:text-white"
-                />
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
