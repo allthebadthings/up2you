@@ -439,7 +439,7 @@ export default function AdminProducts() {
         </Card>
       )}
 
-      <div className="bg-white dark:bg-neutral-800 shadow sm:rounded-lg border border-gray-200 dark:border-neutral-700">
+      <div className="bg-white dark:bg-neutral-900 shadow sm:rounded-lg border border-gray-200 dark:border-neutral-800">
         <ul className="divide-y divide-gray-200 dark:divide-neutral-700">
           {paginatedProducts.map((product) => (
             <li key={product.id}>

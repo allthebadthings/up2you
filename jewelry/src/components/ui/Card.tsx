@@ -31,12 +31,12 @@ const Card: React.FC<CardProps> = ({
   image,
   imageAlt,
 }) => {
-  const baseClasses = 'bg-white dark:bg-neutral-800 transition-all duration-200';
+  const baseClasses = 'bg-white dark:bg-neutral-900 transition-all duration-200';
 
   const variantClasses = {
-    default: 'border border-neutral-200 dark:border-neutral-700',
+    default: 'border border-neutral-200 dark:border-neutral-800',
     elevated: 'border border-transparent',
-    outlined: 'border-2 border-neutral-300 dark:border-neutral-600'
+    outlined: 'border-2 border-neutral-300 dark:border-neutral-700'
   };
 
   const paddingClasses = {
