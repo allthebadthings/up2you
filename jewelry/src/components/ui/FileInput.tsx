@@ -52,7 +52,7 @@ const FileInput: React.FC<FileInputProps> = ({
   return (
     <div className={containerClasses}>
       {label && (
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
+        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
           {label}
         </label>
       )}
@@ -79,8 +79,8 @@ const FileInput: React.FC<FileInputProps> = ({
           Choose File
         </Button>
         <div className={clsx(
-          "flex items-center px-3 py-2 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-600 w-full truncate",
-          disabled && "bg-neutral-100 text-neutral-400"
+          "flex items-center px-3 py-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-600 dark:text-neutral-300 w-full truncate",
+          disabled && "bg-neutral-100 dark:bg-neutral-900 text-neutral-400 dark:text-neutral-500"
         )}>
           {fileName || "No file chosen"}
         </div>

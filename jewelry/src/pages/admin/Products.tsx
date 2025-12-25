@@ -386,14 +386,14 @@ export default function AdminProducts() {
 
               {/* Current Images */}
               {formData.images.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
+                <div className="flex flex-wrap gap-3 mb-3">
                   {formData.images.map((img, idx) => (
                     <div key={idx} className="relative">
-                      <img src={img} alt="" className="w-20 h-20 object-cover rounded border" />
+                      <img src={img} alt="" className="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-neutral-700" />
                       <button
                         type="button"
                         onClick={() => removeImage(idx)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 shadow-sm"
                       >
                         ×
                       </button>
@@ -404,17 +404,16 @@ export default function AdminProducts() {
 
               {/* Upload from computer */}
               <div>
-                <label className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-neutral-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-600 cursor-pointer">
+                <div className="flex items-center gap-3">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="hidden"
                     disabled={uploading}
+                    className="block text-sm"
                   />
-                  {uploading ? 'Uploading...' : '📤 Upload Image'}
-                </label>
-                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">(Max 5MB)</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">(Max 5MB)</span>
+                </div>
               </div>
 
               {/* Add image URL */}
@@ -424,7 +423,7 @@ export default function AdminProducts() {
                   placeholder="Or paste image URL"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-neutral-700 dark:text-white"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-neutral-800 dark:text-white"
                 />
                 <Button type="button" variant="secondary" onClick={handleAddImageUrl} disabled={!imageUrl.trim()}>
                   Add URL
@@ -440,7 +439,7 @@ export default function AdminProducts() {
         </Card>
       )}
 
-      <div className="bg-white dark:bg-neutral-800 shadow overflow-hidden sm:rounded-md border border-gray-200 dark:border-neutral-700">
+      <div className="bg-white dark:bg-neutral-800 shadow sm:rounded-lg border border-gray-200 dark:border-neutral-700">
         <ul className="divide-y divide-gray-200 dark:divide-neutral-700">
           {paginatedProducts.map((product) => (
             <li key={product.id}>
@@ -451,7 +450,7 @@ export default function AdminProducts() {
                     <img
                       src={product.images[0]}
                       alt={product.name}
-                      className="w-16 h-16 object-cover rounded border border-gray-200 dark:border-neutral-700"
+                      className="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-neutral-700"
                     />
                   </div>
                 )}
@@ -473,7 +472,7 @@ export default function AdminProducts() {
                               step="0.01"
                               value={quickPrice}
                               onChange={(e) => setQuickPrice(e.target.value)}
-                              className="w-20 px-2 py-1 border border-gray-300 dark:border-neutral-600 rounded text-sm dark:bg-neutral-700 dark:text-white"
+                              className="w-20 px-2 py-1 border border-gray-300 dark:border-neutral-700 rounded-lg text-sm dark:bg-neutral-800 dark:text-white"
                               autoFocus
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') saveQuickPrice(product.id)

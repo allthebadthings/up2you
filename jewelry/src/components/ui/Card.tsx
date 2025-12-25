@@ -31,12 +31,12 @@ const Card: React.FC<CardProps> = ({
   image,
   imageAlt,
 }) => {
-  const baseClasses = 'bg-white transition-all duration-200';
+  const baseClasses = 'bg-white dark:bg-neutral-800 transition-all duration-200';
 
   const variantClasses = {
-    default: 'border border-neutral-200',
+    default: 'border border-neutral-200 dark:border-neutral-700',
     elevated: 'border border-transparent',
-    outlined: 'border-2 border-neutral-300'
+    outlined: 'border-2 border-neutral-300 dark:border-neutral-600'
   };
 
   const paddingClasses = {
@@ -82,7 +82,7 @@ const Card: React.FC<CardProps> = ({
       )}
       
       {header && (
-        <div className={`border-b border-neutral-200 ${paddingClasses[padding]}`}>
+        <div className={`border-b border-neutral-200 dark:border-neutral-700 ${paddingClasses[padding]}`}>
           {header}
         </div>
       )}
@@ -90,12 +90,12 @@ const Card: React.FC<CardProps> = ({
       {(title || subtitle) && (
         <div className={paddingClasses[padding]}>
           {title && (
-            <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
               {subtitle}
             </p>
           )}
@@ -107,7 +107,7 @@ const Card: React.FC<CardProps> = ({
       </div>
 
       {footer && (
-        <div className={`border-t border-neutral-200 ${paddingClasses[padding]}`}>
+        <div className={`border-t border-neutral-200 dark:border-neutral-700 ${paddingClasses[padding]}`}>
           {footer}
         </div>
       )}
