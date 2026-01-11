@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin } from 'lucide-react'
+import { Mail, MapPin } from 'lucide-react'
 
 export default function Contact() {
   return (
@@ -11,17 +11,11 @@ export default function Contact() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-2xl mx-auto">
           <div className="text-center p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
             <Mail className="w-8 h-8 text-yellow-600 dark:text-yellow-500 mx-auto mb-3" />
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Email</h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm">contact@up2you.com</p>
-          </div>
-
-          <div className="text-center p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
-            <Phone className="w-8 h-8 text-yellow-600 dark:text-yellow-500 mx-auto mb-3" />
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Phone</h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">(555) 123-4567</p>
           </div>
 
           <div className="text-center p-6 bg-white dark:bg-neutral-800 rounded-lg shadow-sm">
