@@ -1,26 +1,35 @@
 import { Upload, Image, Package, ExternalLink } from 'lucide-react'
 
 export default function AdminTools() {
+  // Use window.location to determine the correct base URL
+  const getToolUrl = (filename: string) => {
+    // In development, use the backend port directly
+    // In production, use relative paths (same domain)
+    const isDev = window.location.hostname === 'localhost'
+    const baseUrl = isDev ? 'http://localhost:3000' : ''
+    return `${baseUrl}/tools/${filename}`
+  }
+
   const tools = [
     {
       name: 'Image Uploader',
       description: 'Upload jewelry photos and get Imgur URLs instantly for your inventory',
       icon: Upload,
-      url: '/tools/Jewelry_Image_Uploader.html',
+      url: getToolUrl('Jewelry_Image_Uploader.html'),
       color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
     },
     {
       name: 'Photo Studio',
       description: 'Transform raw photos into professional product images with styled backgrounds',
       icon: Image,
-      url: '/tools/Product_Photo_Studio.html',
+      url: getToolUrl('Product_Photo_Studio.html'),
       color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400'
     },
     {
       name: 'Bundle Builder',
       description: 'Create custom bundles and generate professional marketing images',
       icon: Package,
-      url: '/tools/Bundle_Builder.html',
+      url: getToolUrl('Bundle_Builder.html'),
       color: 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400'
     }
   ]
