@@ -45,7 +45,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/ebay', ebayRoutes);
+console.log('Mounting admin routes at /api/admin');
 app.use('/api/admin', requireAdmin, adminRoutes);
+console.log('Admin routes mounted');
 
 
 app.get('/api/auth/google/start', (req, res) => {
