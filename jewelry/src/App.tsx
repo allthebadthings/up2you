@@ -4,6 +4,8 @@ import Home from './pages/Home'
 import UP2YouHome from './pages/UP2YouHome'
 import Catalog from './pages/Catalog'
 import Bundles from './pages/Bundles'
+import ReinventYourself from './pages/ReinventYourself'
+import BreakTheChains from './pages/BreakTheChains'
 import ProductPage from './pages/Product'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
@@ -23,8 +25,8 @@ export default function App() {
           <Route path="catalog" element={<Catalog />} />
           <Route path="bundles" element={<Bundles />} />
           <Route path="simple-statements" element={<Bundles />} />
-          <Route path="reinvent-yourself" element={<div className="min-h-screen bg-black text-white flex items-center justify-center"><div className="text-center"><h1 className="text-4xl font-bold mb-4">Reinvent Yourself</h1><p className="text-white/70">Coming soon...</p></div></div>} />
-          <Route path="break-the-chains" element={<div className="min-h-screen bg-black text-white flex items-center justify-center"><div className="text-center"><h1 className="text-4xl font-bold mb-4">Break the Chains</h1><p className="text-white/70">Builder coming soon...</p></div></div>} />
+          <Route path="reinvent-yourself" element={<ReinventYourself />} />
+          <Route path="break-the-chains" element={<BreakTheChains />} />
           <Route path="product/:id" element={<ProductPage />} />
           <Route path="cart" element={<Cart />} />
           <Route path="checkout" element={<Checkout />} />
