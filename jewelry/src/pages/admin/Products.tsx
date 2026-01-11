@@ -29,6 +29,10 @@ export default function AdminProducts() {
   })
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadingCsv, setUploadingCsv] = useState(false)
+  const [csvResults, setCsvResults] = useState<any>(null)
+  const [uploadingBulkImages, setUploadingBulkImages] = useState(false)
+  const [bulkImageResults, setBulkImageResults] = useState<any>(null)
 
   const headers = {
     'x-admin-token': localStorage.getItem('admin_token') || '',
@@ -121,6 +125,80 @@ export default function AdminProducts() {
     if (imageUrl.trim()) {
       setFormData({...formData, images: [...formData.images, imageUrl.trim()]})
       setImageUrl('')
+    }
+  }
+
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingCsv(true)
+    setCsvResults(null)
+
+    const formDataUpload = new FormData()
+    formDataUpload.append('csv', file)
+
+    try {
+      const res = await fetch('/api/admin/products/csv-upload', {
+        method: 'POST',
+        headers: {
+          'x-admin-token': localStorage.getItem('admin_token') || ''
+        },
+        body: formDataUpload
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        setCsvResults(data)
+        fetchProducts()
+      } else {
+        setCsvResults({ error: data.error || 'Failed to upload CSV' })
+      }
+    } catch (err) {
+      console.error('CSV upload failed:', err)
+      setCsvResults({ error: 'Network error: Failed to upload CSV' })
+    } finally {
+      setUploadingCsv(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  const handleBulkImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingBulkImages(true)
+    setBulkImageResults(null)
+
+    const formDataUpload = new FormData()
+    for (let i = 0; i < files.length; i++) {
+      formDataUpload.append('images', files[i])
+    }
+
+    try {
+      const res = await fetch('/api/admin/products/bulk-image-upload', {
+        method: 'POST',
+        headers: {
+          'x-admin-token': localStorage.getItem('admin_token') || ''
+        },
+        body: formDataUpload
+      })
+      const data = await res.json()
+
+      if (res.ok) {
+        setBulkImageResults(data)
+        fetchProducts()
+      } else {
+        setBulkImageResults({ error: data.error || 'Failed to upload images' })
+      }
+    } catch (err) {
+      console.error('Bulk image upload failed:', err)
+      setBulkImageResults({ error: 'Network error: Failed to upload images' })
+    } finally {
+      setUploadingBulkImages(false)
+      // Reset file input
+      e.target.value = ''
     }
   }
 
@@ -252,9 +330,108 @@ export default function AdminProducts() {
           >
             Pull Shopify Data
           </Button>
+          <label className="inline-flex items-center px-6 py-3 text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-neutral-300 dark:focus:ring-neutral-600 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleCsvUpload}
+              className="hidden"
+              disabled={uploadingCsv}
+            />
+            {uploadingCsv ? 'Uploading...' : 'Upload CSV'}
+          </label>
+          <label className="inline-flex items-center px-6 py-3 text-base font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700 focus:ring-neutral-300 dark:focus:ring-neutral-600 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleBulkImageUpload}
+              className="hidden"
+              disabled={uploadingBulkImages}
+            />
+            {uploadingBulkImages ? 'Uploading...' : 'Bulk Upload Images'}
+          </label>
           <Button onClick={() => setEditing({})}>Add Product</Button>
         </div>
       </div>
+
+      {/* CSV Upload Results */}
+      {csvResults && (
+        <Card className="p-4">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              {csvResults.error ? (
+                <div className="text-red-600 dark:text-red-400">
+                  <p className="font-semibold">CSV Upload Failed</p>
+                  <p className="text-sm mt-1">{csvResults.error}</p>
+                </div>
+              ) : (
+                <div className="text-green-600 dark:text-green-400">
+                  <p className="font-semibold">CSV Upload Successful</p>
+                  <p className="text-sm mt-1">
+                    Created: {csvResults.created || 0}, Updated: {csvResults.updated || 0}, Total: {csvResults.total || 0}
+                  </p>
+                  {csvResults.errors && csvResults.errors.length > 0 && (
+                    <div className="mt-3 text-amber-600 dark:text-amber-400">
+                      <p className="font-semibold text-sm">Errors ({csvResults.errors.length}):</p>
+                      <ul className="text-xs mt-1 space-y-1 max-h-40 overflow-y-auto">
+                        {csvResults.errors.map((err: any, idx: number) => (
+                          <li key={idx}>Row {err.row}: {err.message}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setCsvResults(null)}
+              className="ml-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              ✕
+            </button>
+          </div>
+        </Card>
+      )}
+
+      {/* Bulk Image Upload Results */}
+      {bulkImageResults && (
+        <Card className="p-4">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              {bulkImageResults.error ? (
+                <div className="text-red-600 dark:text-red-400">
+                  <p className="font-semibold">Bulk Image Upload Failed</p>
+                  <p className="text-sm mt-1">{bulkImageResults.error}</p>
+                </div>
+              ) : (
+                <div className="text-green-600 dark:text-green-400">
+                  <p className="font-semibold">Bulk Image Upload Successful</p>
+                  <p className="text-sm mt-1">
+                    Uploaded: {bulkImageResults.uploaded || 0}, Matched: {bulkImageResults.matched || 0}
+                  </p>
+                  {bulkImageResults.unmatched && bulkImageResults.unmatched.length > 0 && (
+                    <div className="mt-3 text-amber-600 dark:text-amber-400">
+                      <p className="font-semibold text-sm">Unmatched files ({bulkImageResults.unmatched.length}):</p>
+                      <ul className="text-xs mt-1 space-y-1 max-h-40 overflow-y-auto">
+                        {bulkImageResults.unmatched.map((filename: string, idx: number) => (
+                          <li key={idx}>{filename}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setBulkImageResults(null)}
+              className="ml-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              ✕
+            </button>
+          </div>
+        </Card>
+      )}
 
       {/* Sort Controls */}
       <div className="flex items-center gap-4 text-sm">

@@ -1,8 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
+import UP2YouHome from './pages/UP2YouHome'
 import Catalog from './pages/Catalog'
 import Bundles from './pages/Bundles'
+import ReinventYourself from './pages/ReinventYourself'
+import BreakTheChains from './pages/BreakTheChains'
+import Contact from './pages/Contact'
+import Shipping from './pages/Shipping'
+import Returns from './pages/Returns'
 import ProductPage from './pages/Product'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
@@ -18,9 +24,15 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
+          <Route index element={<UP2YouHome />} />
           <Route path="catalog" element={<Catalog />} />
           <Route path="bundles" element={<Bundles />} />
+          <Route path="simple-statements" element={<Bundles />} />
+          <Route path="reinvent-yourself" element={<ReinventYourself />} />
+          <Route path="break-the-chains" element={<BreakTheChains />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="shipping" element={<Shipping />} />
+          <Route path="returns" element={<Returns />} />
           <Route path="product/:id" element={<ProductPage />} />
           <Route path="cart" element={<Cart />} />
           <Route path="checkout" element={<Checkout />} />

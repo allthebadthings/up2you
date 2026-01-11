@@ -27,13 +27,19 @@ export interface ProductFilters {
   search?: string
   featured?: boolean
   bundle?: boolean
+  page?: number
+  limit?: number
 }
 
 export const productService = {
-  async getProducts(filters: ProductFilters = {}): Promise<Product[]> {
+  async getProducts(filters: ProductFilters = {}) {
+    const { page = 1, limit = 15 } = filters
+    const from = (page - 1) * limit
+    const to = from + limit - 1
+    
     let query = supabase
       .from('products')
-      .select('*')
+      .select('*', { count: 'exact' })
 
     if (filters.category && filters.category !== 'all') {
       query = query.eq('category', filters.category)
@@ -63,14 +69,16 @@ export const productService = {
       query = query.eq('is_bundle', true)
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false })
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to)
 
     if (error) {
       console.error('Error fetching products:', error)
-      return []
+      return { data: [], count: 0 }
     }
 
-    return data || []
+    return { data: data || [], count: count || 0 }
   },
 
   async getProductById(id: string): Promise<Product | null> {
