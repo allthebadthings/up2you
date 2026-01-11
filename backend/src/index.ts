@@ -16,7 +16,25 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+// Use relaxed helmet for /tools pages, strict for everything else
+app.use((req, res, next) => {
+  if (req.path.startsWith('/tools/')) {
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "https:"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https:", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+          imgSrc: ["'self'", "data:", "https:", "http:"],
+          connectSrc: ["'self'", "https:", "http:"],
+        },
+      },
+    })(req, res, next);
+  } else {
+    helmet()(req, res, next);
+  }
+});
 app.use(cors());
 app.use(morgan('dev'));
 
