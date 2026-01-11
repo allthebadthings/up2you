@@ -663,4 +663,51 @@ router.post('/shopify/push/:id', async (req, res) => {
   }
 })
 
+// Chat settings endpoints
+router.get('/settings/chat', async (req, res) => {
+  try {
+    const config = await configService.getConfig('chat')
+    if (!config) {
+      res.json({
+        propertyId: '',
+        widgetId: '',
+        enabled: false
+      })
+      return
+    }
+    res.json({
+      propertyId: config.config?.propertyId || '',
+      widgetId: config.config?.widgetId || '',
+      enabled: config.is_active || false
+    })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.post('/settings/chat', async (req, res) => {
+  try {
+    const { propertyId, widgetId, enabled } = req.body
+
+    if (!propertyId || !widgetId) {
+      res.status(400).json({ error: 'propertyId and widgetId are required' })
+      return
+    }
+
+    const updated = await configService.updateConfig(
+      'chat',
+      { propertyId, widgetId },
+      enabled
+    )
+
+    res.json({
+      propertyId: updated.config?.propertyId || '',
+      widgetId: updated.config?.widgetId || '',
+      enabled: updated.is_active || false
+    })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 export const adminRoutes = router

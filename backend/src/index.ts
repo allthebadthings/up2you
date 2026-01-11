@@ -42,6 +42,25 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 })
 
+// Public chat config endpoint (no auth required)
+app.get('/api/chat/config', async (req, res) => {
+  try {
+    const { configService } = await import('./services/config.js')
+    const config = await configService.getConfig('chat')
+    if (!config || !config.is_active) {
+      res.json({ enabled: false })
+      return
+    }
+    res.json({
+      enabled: true,
+      propertyId: config.config?.propertyId || '',
+      widgetId: config.config?.widgetId || ''
+    })
+  } catch (e: any) {
+    res.json({ enabled: false })
+  }
+})
+
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/ebay', ebayRoutes);
