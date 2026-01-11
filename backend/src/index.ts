@@ -32,6 +32,9 @@ app.use((req, res, next) => {
 // Serve uploaded images
 app.use('/uploads', express.static('uploads'));
 
+// Serve admin tools
+app.use('/tools', express.static('public/tools'));
+
 // Routes
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
