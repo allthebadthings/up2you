@@ -4,6 +4,7 @@ import { useCart } from '../store/cart'
 import { useTheme } from '../hooks/useTheme'
 import { useState } from 'react'
 import { Button, Badge } from './ui'
+import ChatWidget from './ChatWidget'
 
 export default function Layout() {
   const { itemCount } = useCart()
@@ -129,6 +130,9 @@ export default function Layout() {
           </div>
         </div>
       </footer>
+
+      {/* Chat Widget */}
+      <ChatWidget />
     </div>
   )
 }
