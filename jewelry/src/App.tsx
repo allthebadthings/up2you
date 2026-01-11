@@ -17,6 +17,7 @@ import AdminGuard from './components/admin/AdminGuard'
 import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminProducts from './pages/admin/Products'
+import AdminSettings from './pages/admin/Settings'
 import Auth0Demo from './pages/Auth0Demo'
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/admin" element={<AdminGuard />}>
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="settings" element={<AdminSettings />} />
           <Route path="orders" element={<div className="p-6">Orders coming soon...</div>} />
         </Route>
       </Routes>

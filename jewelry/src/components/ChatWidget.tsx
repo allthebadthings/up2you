@@ -9,7 +9,15 @@ interface Message {
   timestamp: Date
 }
 
+interface ChatConfig {
+  enabled: boolean
+  propertyId?: string
+  widgetId?: string
+}
+
 export default function ChatWidget() {
+  const [chatConfig, setChatConfig] = useState<ChatConfig | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -21,6 +29,47 @@ export default function ChatWidget() {
   ])
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Load chat config on mount
+  useEffect(() => {
+    loadChatConfig()
+  }, [])
+
+  // Load Tawk.to script if configured
+  useEffect(() => {
+    if (chatConfig?.enabled && chatConfig.propertyId && chatConfig.widgetId) {
+      loadTawkToScript(chatConfig.propertyId, chatConfig.widgetId)
+    }
+  }, [chatConfig])
+
+  const loadChatConfig = async () => {
+    try {
+      const res = await fetch('/api/chat/config')
+      const data = await res.json()
+      setChatConfig(data)
+    } catch (error) {
+      console.error('Failed to load chat config:', error)
+      setChatConfig({ enabled: false })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadTawkToScript = (propertyId: string, widgetId: string) => {
+    // Check if script already loaded
+    if ((window as any).Tawk_API) {
+      return
+    }
+
+    const script = document.createElement('script')
+    script.async = true
+    script.src = `https://embed.tawk.to/${propertyId}/${widgetId}`
+    script.charset = 'UTF-8'
+    script.setAttribute('crossorigin', '*')
+
+    const firstScript = document.getElementsByTagName('script')[0]
+    firstScript.parentNode?.insertBefore(script, firstScript)
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -73,6 +122,17 @@ export default function ChatWidget() {
     }
   }
 
+  // If real chat is enabled, don't show fake chat
+  if (chatConfig?.enabled && chatConfig.propertyId && chatConfig.widgetId) {
+    return null
+  }
+
+  // If still loading, don't show anything
+  if (loading) {
+    return null
+  }
+
+  // Show fake chat fallback
   return (
     <>
       {/* Chat Button */}
