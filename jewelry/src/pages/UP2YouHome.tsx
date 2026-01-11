@@ -18,9 +18,29 @@ export default function UP2YouHome() {
   }, [])
 
   const loadProducts = async () => {
-    // Load first 11 products for the grid (plus 1 impulse tile = 12 total)
-    const { data } = await productService.getProducts({ limit: 11 })
-    setProducts(data)
+    // Load more products initially so we can filter for working images
+    const { data } = await productService.getProducts({ limit: 50 })
+
+    // Filter and sort products - prioritize those with valid images
+    const productsWithImages = data.filter(p =>
+      p.images &&
+      Array.isArray(p.images) &&
+      p.images.length > 0 &&
+      p.images[0] &&
+      p.images[0].trim() !== ''
+    )
+
+    const productsWithoutImages = data.filter(p =>
+      !p.images ||
+      !Array.isArray(p.images) ||
+      p.images.length === 0 ||
+      !p.images[0] ||
+      p.images[0].trim() === ''
+    )
+
+    // Show products with images first, then ones without (take first 11 total)
+    const sortedProducts = [...productsWithImages, ...productsWithoutImages].slice(0, 11)
+    setProducts(sortedProducts)
   }
 
   const handleImpulseClick = () => {
