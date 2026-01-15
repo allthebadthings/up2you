@@ -396,13 +396,115 @@ router.get('/stats', async (req, res) => {
   if (useDb) {
     const { count, error } = await supabase.from('products').select('*', { count: 'exact', head: true })
     if (error) {
-        // Fallback to 0 if table doesn't exist yet
-        res.json({ users: 0, products: 0, orders: 0, error: error.message })
-        return
+      // Fallback to 0 if table doesn't exist yet
+      res.json({ users: 0, products: 0, orders: 0, error: error.message })
+      return
     }
-    res.json({ users: 0, products: count || 0, orders: 0 })
+
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('total, payment_status, status, created_at')
+
+    if (ordersError) {
+      res.json({
+        users: 0,
+        products: count || 0,
+        orders: 0,
+        orders_today: 0,
+        orders_7d: 0,
+        orders_30d: 0,
+        orders_paid: 0,
+        orders_pending: 0,
+        revenue_total: 0,
+        revenue_paid: 0,
+        revenue_today: 0,
+        revenue_7d: 0,
+        revenue_30d: 0,
+        error: ordersError.message
+      })
+      return
+    }
+
+    const now = new Date()
+    const startOfToday = new Date(now)
+    startOfToday.setHours(0, 0, 0, 0)
+    const dayMs = 24 * 60 * 60 * 1000
+    const since7 = new Date(now.getTime() - 7 * dayMs)
+    const since30 = new Date(now.getTime() - 30 * dayMs)
+
+    let ordersTotal = 0
+    let ordersToday = 0
+    let orders7d = 0
+    let orders30d = 0
+    let ordersPaid = 0
+    let ordersPending = 0
+    let revenueTotal = 0
+    let revenuePaid = 0
+    let revenueToday = 0
+    let revenue7d = 0
+    let revenue30d = 0
+
+    for (const order of orders || []) {
+      const total = Number(order.total || 0)
+      const createdAt = order.created_at ? new Date(order.created_at) : null
+
+      ordersTotal += 1
+      revenueTotal += total
+
+      if (order.payment_status === 'paid') {
+        ordersPaid += 1
+        revenuePaid += total
+      } else if (order.payment_status === 'pending') {
+        ordersPending += 1
+      }
+
+      if (createdAt) {
+        if (createdAt >= startOfToday) {
+          ordersToday += 1
+          revenueToday += total
+        }
+        if (createdAt >= since7) {
+          orders7d += 1
+          revenue7d += total
+        }
+        if (createdAt >= since30) {
+          orders30d += 1
+          revenue30d += total
+        }
+      }
+    }
+
+    res.json({
+      users: 0,
+      products: count || 0,
+      orders: ordersTotal,
+      orders_today: ordersToday,
+      orders_7d: orders7d,
+      orders_30d: orders30d,
+      orders_paid: ordersPaid,
+      orders_pending: ordersPending,
+      revenue_total: Number(revenueTotal.toFixed(2)),
+      revenue_paid: Number(revenuePaid.toFixed(2)),
+      revenue_today: Number(revenueToday.toFixed(2)),
+      revenue_7d: Number(revenue7d.toFixed(2)),
+      revenue_30d: Number(revenue30d.toFixed(2))
+    })
   } else {
-    res.json({ users: 0, products: localProducts.length, orders: 0 })
+    res.json({
+      users: 0,
+      products: localProducts.length,
+      orders: 0,
+      orders_today: 0,
+      orders_7d: 0,
+      orders_30d: 0,
+      orders_paid: 0,
+      orders_pending: 0,
+      revenue_total: 0,
+      revenue_paid: 0,
+      revenue_today: 0,
+      revenue_7d: 0,
+      revenue_30d: 0
+    })
   }
 })
 

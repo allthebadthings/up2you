@@ -7,6 +7,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<string | null>(null)
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 
   useEffect(() => {
     const headers = { 'x-admin-token': localStorage.getItem('admin_token') || '' }
@@ -115,6 +117,74 @@ export default function AdminDashboard() {
             <a href="/admin/orders" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300">
               View all
             </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="bg-white dark:bg-neutral-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-neutral-700">
+          <div className="p-5">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Total Revenue</dt>
+              <dd className="text-lg font-medium text-gray-900 dark:text-white">{formatCurrency(stats?.revenue_total || 0)}</dd>
+              <dd className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Paid: {formatCurrency(stats?.revenue_paid || 0)}
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-neutral-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-neutral-700">
+          <div className="p-5">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Orders Today</dt>
+              <dd className="text-lg font-medium text-gray-900 dark:text-white">{stats?.orders_today || 0}</dd>
+              <dd className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {formatCurrency(stats?.revenue_today || 0)}
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-neutral-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-neutral-700">
+          <div className="p-5">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Last 7 Days</dt>
+              <dd className="text-lg font-medium text-gray-900 dark:text-white">{stats?.orders_7d || 0}</dd>
+              <dd className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {formatCurrency(stats?.revenue_7d || 0)}
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-neutral-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-neutral-700">
+          <div className="p-5">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Last 30 Days</dt>
+              <dd className="text-lg font-medium text-gray-900 dark:text-white">{stats?.orders_30d || 0}</dd>
+              <dd className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {formatCurrency(stats?.revenue_30d || 0)}
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-neutral-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-neutral-700">
+          <div className="p-5">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Paid Orders</dt>
+              <dd className="text-lg font-medium text-gray-900 dark:text-white">{stats?.orders_paid || 0}</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-neutral-800 overflow-hidden shadow rounded-lg border border-gray-200 dark:border-neutral-700">
+          <div className="p-5">
+            <dl>
+              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Pending Orders</dt>
+              <dd className="text-lg font-medium text-gray-900 dark:text-white">{stats?.orders_pending || 0}</dd>
+            </dl>
           </div>
         </div>
       </div>

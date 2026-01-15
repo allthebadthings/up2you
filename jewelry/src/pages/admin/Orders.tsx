@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Card } from '../../components/ui'
 import { Package, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
@@ -14,9 +14,33 @@ type Order = {
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded'
 }
 
+type OrderItem = {
+  id: string
+  product_name: string
+  product_price: number
+  quantity: number
+}
+
+type OrderDetails = {
+  order: Order & {
+    address?: string
+    city?: string
+    state?: string
+    zip_code?: string
+    subtotal?: number
+    bundle_discount?: number
+    tax?: number
+    shipping?: number
+  }
+  items: OrderItem[]
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [detailsById, setDetailsById] = useState<Record<string, OrderDetails>>({})
+  const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     fetchOrders()
@@ -38,6 +62,31 @@ export default function AdminOrders() {
       setLoading(false)
     }
   }
+
+  const fetchOrderDetails = async (orderId: string) => {
+    if (detailsById[orderId] || detailsLoading[orderId]) return
+    setDetailsLoading(prev => ({ ...prev, [orderId]: true }))
+    try {
+      const res = await fetch(`/api/orders/${orderId}`)
+      const data = await res.json()
+      if (res.ok && data?.order) {
+        setDetailsById(prev => ({ ...prev, [orderId]: data }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch order details:', error)
+    } finally {
+      setDetailsLoading(prev => ({ ...prev, [orderId]: false }))
+    }
+  }
+
+  const toggleDetails = (orderId: string) => {
+    const next = expandedId === orderId ? null : orderId
+    setExpandedId(next)
+    if (next) fetchOrderDetails(next)
+  }
+
+  const formatCurrency = (value?: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -112,33 +161,111 @@ export default function AdminOrders() {
                 </tr>
               ) : (
                 orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition">
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-gray-900 dark:text-white">#{order.order_number}</span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600 dark:text-neutral-300">
-                      {formatDate(order.created_at)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900 dark:text-white">{order.first_name} {order.last_name}</div>
-                      <div className="text-xs text-gray-500 dark:text-neutral-400">{order.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.payment_status)}`}>
-                        {getStatusIcon(order.payment_status)}
-                        <span className="capitalize">{order.payment_status}</span>
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {getStatusIcon(order.status)}
-                        <span className="capitalize">{order.status}</span>
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
-                      ${Number(order.total).toFixed(2)}
-                    </td>
-                  </tr>
+                  <Fragment key={order.id}>
+                    <tr
+                      className="hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition cursor-pointer"
+                      onClick={() => toggleDetails(order.id)}
+                    >
+                      <td className="px-6 py-4">
+                        <span className="font-medium text-gray-900 dark:text-white">#{order.order_number}</span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 dark:text-neutral-300">
+                        {formatDate(order.created_at)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-900 dark:text-white">{order.first_name} {order.last_name}</div>
+                        <div className="text-xs text-gray-500 dark:text-neutral-400">{order.email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.payment_status)}`}>
+                          {getStatusIcon(order.payment_status)}
+                          <span className="capitalize">{order.payment_status}</span>
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                          {getStatusIcon(order.status)}
+                          <span className="capitalize">{order.status}</span>
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">
+                        {formatCurrency(order.total)}
+                      </td>
+                    </tr>
+                    {expandedId === order.id && (
+                      <tr className="bg-gray-50 dark:bg-neutral-900/40">
+                        <td colSpan={6} className="px-6 py-4">
+                          {detailsLoading[order.id] && (
+                            <div className="text-sm text-gray-500 dark:text-neutral-400">Loading order details...</div>
+                          )}
+                          {!detailsLoading[order.id] && detailsById[order.id] && (
+                            <div className="grid gap-6 lg:grid-cols-2">
+                              <div>
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Items</h3>
+                                <div className="space-y-2">
+                                  {detailsById[order.id].items.map(item => (
+                                    <div key={item.id} className="flex items-center justify-between text-sm text-gray-700 dark:text-neutral-300">
+                                      <div>
+                                        <div className="font-medium text-gray-900 dark:text-white">{item.product_name}</div>
+                                        <div className="text-xs text-gray-500 dark:text-neutral-400">Qty: {item.quantity}</div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="font-medium">{formatCurrency(item.product_price * item.quantity)}</div>
+                                        <div className="text-xs text-gray-500 dark:text-neutral-400">{formatCurrency(item.product_price)} each</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="space-y-4">
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Shipping</h3>
+                                  <div className="text-sm text-gray-700 dark:text-neutral-300">
+                                    <div>{detailsById[order.id].order.address}</div>
+                                    <div>
+                                      {detailsById[order.id].order.city}, {detailsById[order.id].order.state} {detailsById[order.id].order.zip_code}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Totals</h3>
+                                  <div className="space-y-1 text-sm text-gray-700 dark:text-neutral-300">
+                                    <div className="flex justify-between">
+                                      <span>Subtotal</span>
+                                      <span>{formatCurrency(detailsById[order.id].order.subtotal)}</span>
+                                    </div>
+                                    {Number(detailsById[order.id].order.bundle_discount || 0) > 0 && (
+                                      <div className="flex justify-between text-green-600 dark:text-green-400">
+                                        <span>Bundle Discount</span>
+                                        <span>-{formatCurrency(detailsById[order.id].order.bundle_discount)}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between">
+                                      <span>Tax</span>
+                                      <span>{formatCurrency(detailsById[order.id].order.tax)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Shipping</span>
+                                      <span>{formatCurrency(detailsById[order.id].order.shipping)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-semibold text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-neutral-700">
+                                      <span>Total</span>
+                                      <span>{formatCurrency(detailsById[order.id].order.total)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {!detailsLoading[order.id] && !detailsById[order.id] && (
+                            <div className="text-sm text-gray-500 dark:text-neutral-400">Unable to load order details.</div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))
               )}
             </tbody>
