@@ -50,6 +50,10 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
+    if (!id) {
+      res.status(400).json({ error: 'Order id is required' })
+      return
+    }
     const data = await getOrderWithItems(id)
     res.json(data)
   } catch (e: any) {
@@ -58,4 +62,3 @@ router.get('/:id', async (req: Request, res: Response) => {
 })
 
 export const ordersRoutes = router
-
