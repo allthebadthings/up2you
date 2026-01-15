@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Lock, Truck } from 'lucide-react'
 import { useCart } from '../store/cart'
 import { loadStripe } from '@stripe/stripe-js'
+import type { StripeElementsOptionsClientSecret } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme'
@@ -163,8 +164,9 @@ export default function Checkout() {
   const bundleSavings = calculateBundleSavings()
   const finalTotal = total - bundleSavings
 
-  const elementsOptions = clientSecret
-    ? { clientSecret, appearance: { theme: isDark ? 'night' : 'stripe' } }
+  const appearanceTheme: 'night' | 'stripe' = isDark ? 'night' : 'stripe'
+  const elementsOptions: StripeElementsOptionsClientSecret | undefined = clientSecret
+    ? { clientSecret, appearance: { theme: appearanceTheme } }
     : undefined
 
   return (
