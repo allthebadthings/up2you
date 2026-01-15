@@ -594,8 +594,24 @@ router.delete('/products/:id', async (req, res) => {
     }
 })
 
-router.get('/orders', (req, res) => {
-  res.json({ items: [] })
+router.get('/orders', async (req, res) => {
+  if (useDb) {
+    // Fetch orders sorted by creation date (newest first)
+    // Also fetch line item count or details if needed
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      res.status(500).json({ error: error.message })
+      return
+    }
+    res.json({ items: data })
+  } else {
+    // Mock empty list if no DB
+    res.json({ items: [] })
+  }
 })
 
 router.get('/system/info', (req, res) => {

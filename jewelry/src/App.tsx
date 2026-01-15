@@ -19,6 +19,7 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminProducts from './pages/admin/Products'
 import AdminSettings from './pages/admin/Settings'
 import AdminTools from './pages/admin/Tools'
+import AdminOrders from './pages/admin/Orders'
 import Auth0Demo from './pages/Auth0Demo'
 
 export default function App() {
@@ -49,7 +50,7 @@ export default function App() {
           <Route path="products" element={<AdminProducts />} />
           <Route path="tools" element={<AdminTools />} />
           <Route path="settings" element={<AdminSettings />} />
-          <Route path="orders" element={<div className="p-6">Orders coming soon...</div>} />
+          <Route path="orders" element={<AdminOrders />} />
         </Route>
       </Routes>
     </BrowserRouter>
