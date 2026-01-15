@@ -460,6 +460,8 @@ router.post('/products', async (req, res) => {
   }
 })
 
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
 router.patch('/products/:id', async (req, res) => {
   const { id } = req.params
   
@@ -484,20 +486,23 @@ router.patch('/products/:id', async (req, res) => {
   }
 
   if (useDb) {
-    const { data, error } = await supabase
-        .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single()
+    let query = supabase.from('products').update(updates)
+    
+    if (isUuid(id)) {
+      query = query.eq('id', id)
+    } else {
+      query = query.eq('sku', id)
+    }
+
+    const { data, error } = await query.select().single()
     
     if (error) {
-        res.status(500).json({ error: error.message })
-        return
+      res.status(500).json({ error: error.message })
+      return
     }
     if (!data) {
-        res.status(404).json({ error: 'Product not found' })
-        return
+      res.status(404).json({ error: 'Product not found' })
+      return
     }
     res.json(data)
   } else {
@@ -524,11 +529,15 @@ router.post('/products/:id/generate-description', async (req, res) => {
     }
     let product: any = null
     if (useDb) {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single()
+      let query = supabase.from('products').select('*')
+      
+      if (isUuid(id)) {
+        query = query.eq('id', id)
+      } else {
+        query = query.eq('sku', id)
+      }
+
+      const { data, error } = await query.single()
       if (error) {
         res.status(500).json({ error: error.message })
         return
@@ -558,10 +567,15 @@ router.delete('/products/:id', async (req, res) => {
     const { id } = req.params
 
     if (useDb) {
-        const { error } = await supabase
-            .from('products')
-            .delete()
-            .eq('id', id)
+        let query = supabase.from('products').delete()
+        
+        if (isUuid(id)) {
+          query = query.eq('id', id)
+        } else {
+          query = query.eq('sku', id)
+        }
+
+        const { error } = await query
         
         if (error) {
             res.status(500).json({ error: error.message })
@@ -695,11 +709,16 @@ router.post('/shopify/push/:id', async (req, res) => {
       return
     }
     const { id } = req.params
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single()
+
+    let query = supabase.from('products').select('*')
+    if (isUuid(id)) {
+      query = query.eq('id', id)
+    } else {
+      query = query.eq('sku', id)
+    }
+
+    const { data, error } = await query.single()
+
     if (error) {
       res.status(500).json({ error: error.message })
       return
