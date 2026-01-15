@@ -26,10 +26,10 @@ export default function ProductPage() {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading product...</p>
+          <p className="text-gray-600 dark:text-neutral-400">Loading product...</p>
         </div>
       </div>
     )
@@ -37,9 +37,9 @@ export default function ProductPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-900">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Product not found</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Product not found</h2>
           <Link to="/catalog" className="text-yellow-600 hover:text-yellow-700">
             Back to catalog
           </Link>
@@ -67,10 +67,10 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <Link to="/catalog" className="text-gray-600 hover:text-yellow-600 transition">
+          <Link to="/catalog" className="text-gray-600 dark:text-neutral-400 hover:text-yellow-600 dark:hover:text-yellow-500 transition">
             ← Back to catalog
           </Link>
         </div>
@@ -78,7 +78,7 @@ export default function ProductPage() {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-lg">
+            <div className="aspect-square bg-white dark:bg-neutral-800 rounded-lg overflow-hidden shadow-lg">
               <img
                 src={product.images[selectedImage]}
                 alt={product.name}
@@ -91,7 +91,7 @@ export default function ProductPage() {
                   key={index}
                   onClick={() => setSelectedImage(index)}
                   className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                    selectedImage === index ? 'border-yellow-600' : 'border-gray-200'
+                    selectedImage === index ? 'border-yellow-600' : 'border-gray-200 dark:border-neutral-700'
                   }`}
                 >
                   <img
@@ -107,9 +107,9 @@ export default function ProductPage() {
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-serif text-gray-900 mb-2">{product.name}</h1>
+              <h1 className="text-3xl font-serif text-gray-900 dark:text-white mb-2">{product.name}</h1>
               {product.is_bundle && (
-                <span className="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                <span className="inline-block bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 px-3 py-1 rounded-full text-sm font-semibold">
                   Bundle Deal
                 </span>
               )}
@@ -120,17 +120,17 @@ export default function ProductPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-3xl font-bold text-yellow-600">${(product.price * (1 - product.bundle_discount / 100)).toFixed(2)}</span>
-                    <span className="text-lg text-gray-400 line-through">${product.price}</span>
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-semibold">
+                    <span className="text-lg text-gray-400 dark:text-neutral-500 line-through">${product.price}</span>
+                    <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 px-2 py-1 rounded text-sm font-semibold">
                       Save {product.bundle_discount}%
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">Bundle price • Save {product.bundle_discount}%</p>
+                  <p className="text-sm text-gray-600 dark:text-neutral-400">Bundle price • Save {product.bundle_discount}%</p>
                 </div>
               ) : (
                 <div className="text-3xl font-bold text-yellow-600">${product.price}</div>
               )}
-              <p className="text-gray-600">{product.metal_type}</p>
+              <p className="text-gray-600 dark:text-neutral-400">{product.metal_type}</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -139,33 +139,33 @@ export default function ProductPage() {
                   <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <span className="text-gray-600">(4.8) • 127 reviews</span>
+              <span className="text-gray-600 dark:text-neutral-400">(4.8) • 127 reviews</span>
             </div>
 
-            <p className="text-gray-700 leading-relaxed">{product.description}</p>
+            <p className="text-gray-700 dark:text-neutral-300 leading-relaxed">{product.description}</p>
 
             {product.is_bundle && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3">Bundle Details:</h3>
-                <p className="text-gray-700">{product.description}</p>
-                <p className="text-sm text-green-600 mt-2">Save {product.bundle_discount}% with this bundle!</p>
+              <div className="bg-gray-50 dark:bg-neutral-800 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Bundle Details:</h3>
+                <p className="text-gray-700 dark:text-neutral-300">{product.description}</p>
+                <p className="text-sm text-green-600 dark:text-green-400 mt-2">Save {product.bundle_discount}% with this bundle!</p>
               </div>
             )}
 
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <label className="text-gray-700 font-medium">Quantity:</label>
-                <div className="flex items-center border border-gray-300 rounded-lg">
+                <label className="text-gray-700 dark:text-neutral-300 font-medium">Quantity:</label>
+                <div className="flex items-center border border-gray-300 dark:border-neutral-600 rounded-lg">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-2 hover:bg-gray-100 transition"
+                    className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 transition"
                   >
                     -
                   </button>
-                  <span className="px-4 py-2 border-x border-gray-300">{quantity}</span>
+                  <span className="px-4 py-2 border-x border-gray-300 dark:border-neutral-600 text-gray-900 dark:text-white">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-2 hover:bg-gray-100 transition"
+                    className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 transition"
                   >
                     +
                   </button>
@@ -180,16 +180,16 @@ export default function ProductPage() {
                   <ShoppingBag className="w-5 h-5" />
                   Add to Cart
                 </button>
-                <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <button className="p-3 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 transition">
                   <Heart className="w-5 h-5" />
                 </button>
-                <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <button className="p-3 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 transition">
                   <Share2 className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <div className="border-t pt-6 space-y-2 text-sm text-gray-600">
+            <div className="border-t border-gray-200 dark:border-neutral-700 pt-6 space-y-2 text-sm text-gray-600 dark:text-neutral-400">
               <p>✓ Free shipping on orders over $200</p>
               <p>✓ 30-day return policy</p>
               <p>✓ Gift packaging included</p>
