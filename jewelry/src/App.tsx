@@ -1,8 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
+import UP2YouHome from './pages/UP2YouHome'
 import Catalog from './pages/Catalog'
 import Bundles from './pages/Bundles'
+import ReinventYourself from './pages/ReinventYourself'
+import BreakTheChains from './pages/BreakTheChains'
+import Contact from './pages/Contact'
+import Shipping from './pages/Shipping'
+import Returns from './pages/Returns'
 import ProductPage from './pages/Product'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
@@ -12,6 +18,7 @@ import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminProducts from './pages/admin/Products'
 import AdminSettings from './pages/admin/Settings'
+import AdminTools from './pages/admin/Tools'
 import Auth0Demo from './pages/Auth0Demo'
 
 export default function App() {
@@ -19,9 +26,15 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
+          <Route index element={<UP2YouHome />} />
           <Route path="catalog" element={<Catalog />} />
           <Route path="bundles" element={<Bundles />} />
+          <Route path="simple-statements" element={<Bundles />} />
+          <Route path="reinvent-yourself" element={<ReinventYourself />} />
+          <Route path="break-the-chains" element={<BreakTheChains />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="shipping" element={<Shipping />} />
+          <Route path="returns" element={<Returns />} />
           <Route path="product/:id" element={<ProductPage />} />
           <Route path="cart" element={<Cart />} />
           <Route path="checkout" element={<Checkout />} />
@@ -34,6 +47,7 @@ export default function App() {
         <Route path="/admin" element={<AdminGuard />}>
           <Route index element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
+          <Route path="tools" element={<AdminTools />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="orders" element={<div className="p-6">Orders coming soon...</div>} />
         </Route>

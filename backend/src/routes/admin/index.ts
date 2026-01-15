@@ -7,6 +7,8 @@ import { shopifyService } from '../../services/shopify.js'
 import multer from 'multer'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import Papa from 'papaparse'
+import fs from 'fs'
 
 const router = Router()
 
@@ -23,7 +25,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 1000 // Max 1000 files
+  },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
@@ -33,6 +38,24 @@ const upload = multer({
     } else {
       cb(new Error('Only image files are allowed'))
     }
+  }
+})
+
+// Configure multer for CSV uploads
+const csvUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'uploads/')
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+      cb(null, 'csv-' + uniqueSuffix + '.csv')
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept all files for now
+    cb(null, true)
   }
 })
 
@@ -97,6 +120,274 @@ router.post('/upload', upload.single('image'), (req, res) => {
     const imageUrl = `/uploads/${req.file.filename}`
     res.json({ url: imageUrl })
   } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Bulk image upload endpoint - supports up to 1000 images
+router.post('/products/bulk-image-upload', upload.array('images', 1000), async (req, res) => {
+  try {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+      res.status(400).json({ error: 'No images uploaded' })
+      return
+    }
+
+    if (!useDb) {
+      res.status(503).json({ error: 'Database not configured' })
+      return
+    }
+
+    let matched = 0
+    const unmatched: string[] = []
+    const uploaded = req.files.length
+
+    // Get all products from database
+    const { data: products, error: fetchError } = await supabase
+      .from('products')
+      .select('*')
+
+    if (fetchError) {
+      res.status(500).json({ error: fetchError.message })
+      return
+    }
+
+    // Create a lookup map for faster matching (filename -> {productId, imageIndex})
+    const imageMap = new Map<string, { productId: string, imageIndex: number, images: string[] }>()
+
+    for (const product of products || []) {
+      const productImages = Array.isArray(product.images) ? product.images : []
+      productImages.forEach((img: string, index: number) => {
+        // Store both exact match and without extension
+        imageMap.set(img, { productId: product.id, imageIndex: index, images: productImages })
+
+        // Also store without extension for flexible matching
+        const nameWithoutExt = img.replace(/\.[^/.]+$/, '')
+        if (nameWithoutExt !== img) {
+          imageMap.set(nameWithoutExt, { productId: product.id, imageIndex: index, images: productImages })
+        }
+      })
+    }
+
+    // Process each uploaded file
+    for (const file of req.files) {
+      const uploadedUrl = `/uploads/${file.filename}`
+      const originalName = file.originalname
+      const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '')
+
+      // Try to find a match
+      const match = imageMap.get(originalName) || imageMap.get(nameWithoutExt)
+
+      if (match) {
+        // Replace the filename with the actual uploaded URL
+        const updatedImages = [...match.images]
+        updatedImages[match.imageIndex] = uploadedUrl
+
+        // Update the product
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ images: updatedImages })
+          .eq('id', match.productId)
+
+        if (!updateError) {
+          matched++
+        } else {
+          unmatched.push(originalName)
+        }
+      } else {
+        unmatched.push(originalName)
+      }
+    }
+
+    res.json({
+      success: true,
+      uploaded,
+      matched,
+      unmatched: unmatched.length > 0 ? unmatched : undefined
+    })
+
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.post('/upload2', (req, res) => {
+  try {
+    res.json({ success: true, message: 'Test route works!' })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Test endpoint
+router.get('/test-csv', (req, res) => {
+  res.json({ message: 'CSV upload route section is working' })
+})
+
+// CSV upload endpoint for bulk product import
+console.log('Registering CSV upload route at /products/csv-upload')
+router.post('/products/csv-upload', csvUpload.single('csv'), async (req, res) => {
+  console.log('CSV upload route handler called!')
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No CSV file uploaded' })
+      return
+    }
+
+    if (!useDb) {
+      res.status(503).json({ error: 'Database not configured' })
+      return
+    }
+
+    // Read the CSV file
+    const csvContent = fs.readFileSync(req.file.path, 'utf-8')
+
+    // Parse CSV with PapaParse
+    const parseResult = Papa.parse(csvContent, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (header: string) => header.trim()
+    })
+
+    if (parseResult.errors.length > 0) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path)
+      res.status(400).json({
+        error: 'CSV parsing error',
+        details: parseResult.errors
+      })
+      return
+    }
+
+    const rows = parseResult.data as any[]
+    const errors: { row: number; message: string }[] = []
+    let created = 0
+    let updated = 0
+
+    // Log first row columns for debugging
+    if (rows.length > 0) {
+      console.log('CSV columns:', Object.keys(rows[0]))
+    }
+
+    // Process each row
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const rowNumber = i + 2 // +2 because index is 0-based and we have a header row
+
+      try {
+        // Validate required fields
+        if (!row.SKU || !row.SKU.trim()) {
+          errors.push({ row: rowNumber, message: 'SKU is required' })
+          continue
+        }
+        if (!row.Name || !row.Name.trim()) {
+          errors.push({ row: rowNumber, message: 'Name is required' })
+          continue
+        }
+
+        // Parse price from either Price or Est_Retail_Price column (with flexible column name matching)
+        let price = 0
+        const priceStr = row.Price?.trim() ||
+                        row.Est_Retail_Price?.trim() ||
+                        row[' Est_Retail_Price ']?.trim() ||
+                        row['Est_Retail_Price']?.trim() || ''
+        if (priceStr) {
+          // Remove $ and extract first number from range (e.g., "$12.00 – $18.00" -> 12.00)
+          const priceMatch = priceStr.replace(/\$/g, '').match(/[\d.]+/)
+          if (priceMatch) {
+            price = parseFloat(priceMatch[0])
+          }
+        }
+
+        if (!price || isNaN(price)) {
+          errors.push({ row: rowNumber, message: 'Valid price is required' })
+          continue
+        }
+        if (!row.Category || !row.Category.trim()) {
+          errors.push({ row: rowNumber, message: 'Category is required' })
+          continue
+        }
+
+        // Collect photo names into images array
+        const images: string[] = []
+        if (row.Old_Photo_Name && row.Old_Photo_Name.trim()) {
+          images.push(row.Old_Photo_Name.trim())
+        }
+        if (row.New_Photo_Name && row.New_Photo_Name.trim()) {
+          images.push(row.New_Photo_Name.trim())
+        }
+
+        // Map CSV columns to product schema
+        const productData = {
+          sku: row.SKU.trim(),
+          name: row.Name.trim(),
+          description: row.Description?.trim() || '',
+          price: price,
+          category: row.Category.trim(),
+          metal_type: row.Metal?.trim() || '',
+          gemstone: '',
+          weight: 0,
+          images,
+          stock_quantity: 0,
+          is_featured: false,
+          is_bundle: false,
+          bundle_discount: 0
+        }
+
+        // Check if product exists with this SKU
+        const { data: existing } = await supabase
+          .from('products')
+          .select('id')
+          .eq('sku', productData.sku)
+          .single()
+
+        if (existing) {
+          // Update existing product
+          const { error } = await supabase
+            .from('products')
+            .update(productData)
+            .eq('sku', productData.sku)
+
+          if (error) throw error
+          updated++
+        } else {
+          // Insert new product
+          const { error } = await supabase
+            .from('products')
+            .insert([productData])
+
+          if (error) throw error
+          created++
+        }
+
+      } catch (error: any) {
+        errors.push({
+          row: rowNumber,
+          message: error.message || 'Failed to process row'
+        })
+      }
+    }
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path)
+
+    // Return results
+    res.json({
+      success: true,
+      created,
+      updated,
+      total: created + updated,
+      errors: errors.length > 0 ? errors : undefined
+    })
+
+  } catch (error: any) {
+    // Clean up file if it exists
+    if (req.file?.path) {
+      try {
+        fs.unlinkSync(req.file.path)
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
     res.status(500).json({ error: error.message })
   }
 })
@@ -426,6 +717,53 @@ router.post('/shopify/push/:id', async (req, res) => {
       sku: data.sku,
     })
     res.json({ id: created?.id, title: created?.title })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// Chat settings endpoints
+router.get('/settings/chat', async (req, res) => {
+  try {
+    const config = await configService.getConfig('chat')
+    if (!config) {
+      res.json({
+        propertyId: '',
+        widgetId: '',
+        enabled: false
+      })
+      return
+    }
+    res.json({
+      propertyId: config.config?.propertyId || '',
+      widgetId: config.config?.widgetId || '',
+      enabled: config.is_active || false
+    })
+  } catch (e: any) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+router.post('/settings/chat', async (req, res) => {
+  try {
+    const { propertyId, widgetId, enabled } = req.body
+
+    if (!propertyId || !widgetId) {
+      res.status(400).json({ error: 'propertyId and widgetId are required' })
+      return
+    }
+
+    const updated = await configService.updateConfig(
+      'chat',
+      { propertyId, widgetId },
+      enabled
+    )
+
+    res.json({
+      propertyId: updated.config?.propertyId || '',
+      widgetId: updated.config?.widgetId || '',
+      enabled: updated.is_active || false
+    })
   } catch (e: any) {
     res.status(500).json({ error: e.message })
   }

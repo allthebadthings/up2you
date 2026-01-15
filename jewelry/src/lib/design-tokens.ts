@@ -26,6 +26,17 @@ export const colors = {
     warning: '#F59E0B',
     error: '#EF4444',
     info: '#3B82F6'
+  },
+  up2you: {
+    black: '#0A0A0A',
+    crimson: '#DC143C',
+    crimsonDark: '#B01030',
+    crimsonLight: '#FF1744',
+    gold: '#FFD700',
+    goldDark: '#FFC107',
+    goldLight: '#FFECB3',
+    charcoal: '#1A1A1A',
+    softBlack: '#1F1F1F'
   }
 } as const;
 

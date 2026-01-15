@@ -17,7 +17,25 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+// Use relaxed helmet for /tools pages, strict for everything else
+app.use((req, res, next) => {
+  if (req.path.startsWith('/tools/')) {
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "https:"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https:", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+          imgSrc: ["'self'", "data:", "https:", "http:"],
+          connectSrc: ["'self'", "https:", "http:"],
+        },
+      },
+    })(req, res, next);
+  } else {
+    helmet()(req, res, next);
+  }
+});
 app.use(cors());
 app.use(morgan('dev'));
 
@@ -33,6 +51,9 @@ app.use((req, res, next) => {
 // Serve uploaded images
 app.use('/uploads', express.static('uploads'));
 
+// Serve admin tools
+app.use('/tools', express.static('public/tools'));
+
 // Routes
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -43,9 +64,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 })
 
+// Public chat config endpoint (no auth required)
+app.get('/api/chat/config', async (req, res) => {
+  try {
+    const { configService } = await import('./services/config.js')
+    const config = await configService.getConfig('chat')
+    if (!config || !config.is_active) {
+      res.json({ enabled: false })
+      return
+    }
+    res.json({
+      enabled: true,
+      propertyId: config.config?.propertyId || '',
+      widgetId: config.config?.widgetId || ''
+    })
+  } catch (e: any) {
+    res.json({ enabled: false })
+  }
+})
+
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/ebay', ebayRoutes);
+console.log('Mounting admin routes at /api/admin');
 app.use('/api/admin', requireAdmin, adminRoutes);
 app.use('/api/orders', ordersRoutes);
 console.log('Routes mounted: /api/stripe, /api/shopify, /api/ebay, /api/admin, /api/orders')

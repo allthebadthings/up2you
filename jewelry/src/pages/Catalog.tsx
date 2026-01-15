@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Filter, Search, ShoppingBag } from 'lucide-react'
 import { useCart } from '../store/cart'
 import { Product } from '../services/products'
 import { productService } from '../services/products'
 
+const PAGE_SIZE = 15
+
 export default function Catalog() {
   const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500])
   const [searchTerm, setSearchTerm] = useState<string>('')
@@ -16,36 +21,55 @@ export default function Catalog() {
 
   const categories = ['all', 'rings', 'necklaces', 'earrings', 'bracelets']
 
-  useEffect(() => {
-    loadProducts()
+  const loadProducts = useCallback(async (page: number, filters: any, initialLoad: boolean) => {
+    setIsLoading(true)
+    
+    // Paginate only Supabase products
+    const { data: supabaseProducts, count } = await productService.getProducts({ ...filters, page, limit: PAGE_SIZE })
+    
+    let allProducts = supabaseProducts
+    
+    // For the first page load, also fetch from other sources
+    if (initialLoad) {
+      const shopifyProducts = await productService.getShopifyProducts()
+      const ebayProducts = await productService.getEbayProducts('jewelry')
+      allProducts = [...supabaseProducts, ...shopifyProducts, ...ebayProducts]
+    }
+
+    setProducts(prevProducts => page === 1 ? allProducts : [...prevProducts, ...allProducts]);
+    setTotalProducts(count)
+    setIsLoading(false)
   }, [])
 
   useEffect(() => {
-    let filtered = products
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === selectedCategory)
+    const filters = {
+      category: selectedCategory,
+      min_price: priceRange[0],
+      max_price: priceRange[1],
+      search: searchTerm,
     }
+    // Reset to page 1 and do an initial load when filters change
+    setCurrentPage(1)
+    loadProducts(1, filters, true)
+  }, [selectedCategory, priceRange, searchTerm, loadProducts])
 
-    filtered = filtered.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1])
-
-    if (searchTerm) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+  useEffect(() => {
+    // This effect handles fetching for pagination (pages > 1)
+    if (currentPage > 1) {
+      const filters = {
+        category: selectedCategory,
+        min_price: priceRange[0],
+        max_price: priceRange[1],
+        search: searchTerm,
+      }
+      loadProducts(currentPage, filters, false)
     }
+  }, [currentPage, loadProducts])
 
-    setFilteredProducts(filtered)
-  }, [selectedCategory, priceRange, searchTerm, products])
-
-  const loadProducts = async () => {
-    const supabaseProducts = await productService.getProducts()
-    const shopifyProducts = await productService.getShopifyProducts()
-    const ebayProducts = await productService.getEbayProducts('jewelry')
-    const data = [...supabaseProducts, ...shopifyProducts, ...ebayProducts]
-    setProducts(data)
-    setFilteredProducts(data)
+  const handleLoadMore = () => {
+    if (!isLoading && products.length < totalProducts) {
+      setCurrentPage(prevPage => prevPage + 1)
+    }
   }
 
   return (
@@ -114,11 +138,11 @@ export default function Catalog() {
         )}
 
         <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          Showing {filteredProducts.length} of {products.length} pieces
+          Showing {products.length} of {totalProducts} pieces from main collection
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
+          {products.map((product) => (
             <div key={product.id} className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-neutral-700 overflow-hidden">
               <Link to={`/product/${product.id}`}>
                 <div className="aspect-square bg-gray-100 dark:bg-neutral-700 overflow-hidden">
@@ -178,7 +202,7 @@ export default function Catalog() {
           ))}
         </div>
 
-        {filteredProducts.length === 0 && (
+        {products.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400 text-lg">No products found matching your criteria.</p>
             <button
@@ -193,6 +217,18 @@ export default function Catalog() {
             </button>
           </div>
         )}
+
+        <div className="mt-8 text-center">
+          {isLoading && <p>Loading...</p>}
+          {!isLoading && products.length < totalProducts && (
+            <button
+              onClick={handleLoadMore}
+              className="px-6 py-3 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition"
+            >
+              Load More
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

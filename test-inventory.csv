@@ -1,0 +1,4 @@
+SKU,Old_Photo_Name,New_Photo_Name,Category,Name,Description,Metal,Size,Price,Est_Retail_Price,Cost,Notes,Status,Pricing_Visual_Description,Pricing_Strategy_Notes
+TEST001,photo1.jpg,new_photo1.jpg,Rings,Gold Diamond Ring,Beautiful 14K gold ring with diamond,Gold,7,1299.99,1500.00,800.00,Test product,Active,Elegant design,Premium pricing
+TEST002,photo2.jpg,new_photo2.jpg,Necklaces,Silver Chain Necklace,Sterling silver chain necklace,Silver,18,299.99,350.00,150.00,Test product,Active,Classic style,Mid-range pricing
+TEST003,photo3.jpg,new_photo3.jpg,Bracelets,Rose Gold Bracelet,Rose gold tennis bracelet,Rose Gold,M,899.99,1000.00,500.00,Test product,Active,Modern design,Competitive pricing

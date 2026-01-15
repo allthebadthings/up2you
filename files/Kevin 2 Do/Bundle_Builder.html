@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jewelry Bundle Builder - Create Custom Collections</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;600;700&family=Montserrat:wght@400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffd700, #ffed4e, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+        
+        .upload-inventory {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-inventory:hover {
+            border-color: rgba(255, 215, 0, 0.6);
+            background: rgba(255, 255, 255, 0.08);
+            transform: scale(1.02);
+        }
+        
+        .upload-inventory.loaded {
+            background: rgba(72, 187, 120, 0.1);
+            border-color: rgba(72, 187, 120, 0.5);
+        }
+        
+        .upload-inventory h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .main-workspace {
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            gap: 20px;
+            min-height: 600px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #ffd700;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        /* Left Panel - Inventory */
+        .inventory-search {
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1em;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .inventory-list {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .inventory-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .inventory-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateX(5px);
+        }
+        
+        .inventory-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .item-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .item-image.no-image {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-sku {
+            font-size: 0.85em;
+            color: #ffd700;
+            font-weight: 600;
+        }
+        
+        .item-name {
+            font-size: 0.9em;
+            margin: 3px 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .item-price {
+            font-size: 0.85em;
+            color: rgba(72, 187, 120, 1);
+            font-weight: 600;
+        }
+        
+        /* Center Panel - Bundle Canvas */
+        .canvas-panel {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .bundle-header {
+            margin-bottom: 20px;
+        }
+        
+        .bundle-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1em;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .bundle-input.large {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #ffd700;
+        }
+        
+        .bundle-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .bundle-canvas {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 3px dashed rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bundle-canvas.dragover {
+            border-color: rgba(255, 215, 0, 0.8);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .bundle-canvas.empty::before {
+            content: 'Drag items here or enter SKU to add';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.3em;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .bundle-items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .bundle-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .bundle-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        .bundle-item-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .bundle-item-image.no-image {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+        }
+        
+        .remove-item {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .remove-item:hover {
+            background: rgba(220, 38, 38, 1);
+            transform: scale(1.1);
+        }
+        
+        .quick-add {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .quick-add-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1em;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .quick-add-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border: none;
+            border-radius: 8px;
+            color: #1a202c;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .quick-add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        /* Right Panel - Summary */
+        .summary-section {
+            margin-bottom: 20px;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .summary-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .summary-value {
+            font-weight: 600;
+            color: #ffd700;
+        }
+        
+        .summary-value.large {
+            font-size: 1.5em;
+            color: #48bb78;
+        }
+        
+        .discount-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        .action-btn.primary {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #1a202c;
+        }
+        
+        .action-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .bundle-preview {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .preview-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.5);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.7);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #excelInput {
+            display: none;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(72, 187, 120, 0.95);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>✨ Bundle Builder</h1>
+            <p>Create custom jewelry collections with visual previews</p>
+        </div>
+        
+        <div class="upload-inventory" id="uploadZone" onclick="document.getElementById('excelInput').click()">
+            <h3 id="uploadText">📊 Load Your Inventory from Excel</h3>
+            <p id="uploadSubtext">Click to upload your Jewelry_Inventory_System.xlsx file</p>
+            <input type="file" id="excelInput" accept=".xlsx,.xls">
+        </div>
+        
+        <div class="main-workspace" id="workspace" style="display: none;">
+            <!-- Left Panel: Inventory -->
+            <div class="panel">
+                <h2>Your Inventory</h2>
+                <div class="inventory-search">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search by SKU, name, category...">
+                </div>
+                <div class="inventory-list" id="inventoryList"></div>
+            </div>
+            
+            <!-- Center Panel: Bundle Canvas -->
+            <div class="panel canvas-panel">
+                <div class="bundle-header">
+                    <input type="text" class="bundle-input large" id="bundleName" placeholder="Bundle Name (e.g., Summer Collection)">
+                    <textarea class="bundle-input" id="bundleDescription" placeholder="Bundle Description (optional)" rows="2"></textarea>
+                </div>
+                <div class="bundle-canvas empty" id="bundleCanvas">
+                    <div class="bundle-items-grid" id="bundleItems"></div>
+                </div>
+                <div class="quick-add">
+                    <input type="text" class="quick-add-input" id="quickAddInput" placeholder="Enter SKU to quick-add">
+                    <button class="quick-add-btn" onclick="quickAddItem()">+ Add</button>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Summary -->
+            <div class="panel">
+                <h2>Bundle Summary</h2>
+                <div class="summary-section">
+                    <div class="summary-row">
+                        <span class="summary-label">Items:</span>
+                        <span class="summary-value" id="itemCount">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Subtotal:</span>
+                        <span class="summary-value" id="subtotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Discount:</span>
+                        <input type="number" class="discount-input" id="discountInput" value="0" min="0" max="100">
+                        <span style="margin-left: 5px;">%</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Savings:</span>
+                        <span class="summary-value" id="savings">-$0.00</span>
+                    </div>
+                    <div class="summary-row" style="border-top: 2px solid rgba(255, 215, 0, 0.3); padding-top: 15px; margin-top: 10px;">
+                        <span class="summary-label" style="font-size: 1.2em; font-weight: 600;">Bundle Total:</span>
+                        <span class="summary-value large" id="bundleTotal">$0.00</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn primary" onclick="generateBundleImage()" id="generateBtn" disabled>
+                        🎨 Generate Bundle Image
+                    </button>
+                    <button class="action-btn secondary" onclick="exportToExcel()">
+                        📥 Export Bundle Info
+                    </button>
+                    <button class="action-btn secondary" onclick="clearBundle()">
+                        🗑️ Clear Bundle
+                    </button>
+                </div>
+                
+                <div class="bundle-preview hidden" id="previewSection">
+                    <h3 style="margin-bottom: 10px; color: #ffd700;">Bundle Image Preview:</h3>
+                    <img id="previewImage" class="preview-image">
+                    <button class="action-btn primary" onclick="downloadBundleImage()" style="margin-top: 10px;">
+                        💾 Download Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <canvas id="bundleCanvas2D"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        let inventory = [];
+        let bundleItems = [];
+        let currentBundle = {
+            name: '',
+            description: '',
+            items: [],
+            discount: 0
+        };
+        
+        // Load Excel file
+        document.getElementById('excelInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = 'Finished Inventory';
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                
+                inventory = jsonData.map(item => ({
+                    sku: item.SKU || '',
+                    category: item.Category || '',
+                    name: item.Name || '',
+                    description: item.Description || '',
+                    metal: item.Metal || '',
+                    size: item.Size || '',
+                    price: parseFloat(item.Price) || 0,
+                    msrp: parseFloat(item.MSRP) || 0,
+                    cost: parseFloat(item.Cost) || 0,
+                    image: item.Images || ''
+                }));
+                
+                loadInventory();
+                showToast(`✅ Loaded ${inventory.length} items from inventory!`);
+                
+                document.getElementById('uploadZone').classList.add('loaded');
+                document.getElementById('uploadText').textContent = `✅ ${inventory.length} Items Loaded`;
+                document.getElementById('uploadSubtext').textContent = 'Click to reload a different file';
+                document.getElementById('workspace').style.display = 'grid';
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        // Load inventory into left panel
+        function loadInventory() {
+            const list = document.getElementById('inventoryList');
+            list.innerHTML = '';
+            
+            inventory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'inventory-item';
+                div.draggable = true;
+                div.dataset.sku = item.sku;
+                
+                const hasImage = item.image && item.image.startsWith('http');
+                
+                div.innerHTML = `
+                    ${hasImage ? 
+                        `<img src="${item.image}" class="item-image" onerror="this.outerHTML='<div class=\\'item-image no-image\\'>💎</div>'">` :
+                        `<div class="item-image no-image">💎</div>`
+                    }
+                    <div class="item-info">
+                        <div class="item-sku">${item.sku}</div>
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-price">$${item.price.toFixed(2)}</div>
+                    </div>
+                `;
+                
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragend', handleDragEnd);
+                div.addEventListener('click', () => addToBundle(item.sku));
+                
+                list.appendChild(div);
+            });
+        }
+        
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            document.querySelectorAll('.inventory-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(search) ? 'flex' : 'none';
+            });
+        });
+        
+        // Drag and drop
+        let draggedItem = null;
+        
+        function handleDragStart(e) {
+            draggedItem = e.target.dataset.sku;
+            e.target.classList.add('dragging');
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+        
+        const canvas = document.getElementById('bundleCanvas');
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            canvas.classList.add('dragover');
+        });
+        
+        canvas.addEventListener('dragleave', () => {
+            canvas.classList.remove('dragover');
+        });
+        
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            canvas.classList.remove('dragover');
+            if (draggedItem) {
+                addToBundle(draggedItem);
+            }
+        });
+        
+        // Add item to bundle
+        function addToBundle(sku) {
+            const item = inventory.find(i => i.sku === sku);
+            if (!item) {
+                showToast('❌ Item not found', 'error');
+                return;
+            }
+            
+            if (bundleItems.find(i => i.sku === sku)) {
+                showToast('⚠️ Item already in bundle', 'warning');
+                return;
+            }
+            
+            bundleItems.push(item);
+            renderBundle();
+            updateSummary();
+            showToast(`✅ Added ${item.name}`);
+        }
+        
+        // Quick add by SKU
+        function quickAddItem() {
+            const sku = document.getElementById('quickAddInput').value.trim();
+            if (sku) {
+                addToBundle(sku);
+                document.getElementById('quickAddInput').value = '';
+            }
+        }
+        
+        // Render bundle items
+        function renderBundle() {
+            const container = document.getElementById('bundleItems');
+            container.innerHTML = '';
+            
+            canvas.classList.toggle('empty', bundleItems.length === 0);
+            
+            bundleItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'bundle-item';
+                
+                const hasImage = item.image && item.image.startsWith('http');
+                
+                div.innerHTML = `
+                    ${hasImage ? 
+                        `<img src="${item.image}" class="bundle-item-image" crossorigin="anonymous" onerror="this.outerHTML='<div class=\\'bundle-item-image no-image\\'>💎</div>'">` :
+                        `<div class="bundle-item-image no-image">💎</div>`
+                    }
+                    <div style="font-size: 0.85em; color: #ffd700; font-weight: 600;">${item.sku}</div>
+                    <div style="font-size: 0.8em; margin-top: 3px;">${item.name}</div>
+                    <div style="font-size: 0.9em; color: #48bb78; margin-top: 5px; font-weight: 600;">$${item.price.toFixed(2)}</div>
+                    <button class="remove-item" onclick="removeFromBundle('${item.sku}')">×</button>
+                `;
+                
+                container.appendChild(div);
+            });
+            
+            document.getElementById('generateBtn').disabled = bundleItems.length === 0;
+        }
+        
+        // Remove from bundle
+        function removeFromBundle(sku) {
+            bundleItems = bundleItems.filter(i => i.sku !== sku);
+            renderBundle();
+            updateSummary();
+            showToast('🗑️ Item removed');
+        }
+        
+        // Update summary
+        function updateSummary() {
+            const subtotal = bundleItems.reduce((sum, item) => sum + item.price, 0);
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const savings = subtotal * (discount / 100);
+            const total = subtotal - savings;
+            
+            document.getElementById('itemCount').textContent = bundleItems.length;
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('savings').textContent = `-$${savings.toFixed(2)}`;
+            document.getElementById('bundleTotal').textContent = `$${total.toFixed(2)}`;
+        }
+        
+        document.getElementById('discountInput').addEventListener('input', updateSummary);
+        
+        // Generate bundle image
+        async function generateBundleImage() {
+            if (bundleItems.length === 0) return;
+            
+            const canvas = document.getElementById('bundleCanvas2D');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            const itemsPerRow = Math.min(3, bundleItems.length);
+            const rows = Math.ceil(bundleItems.length / itemsPerRow);
+            const itemSize = 250;
+            const padding = 30;
+            const headerHeight = 150;
+            
+            canvas.width = itemsPerRow * itemSize + (itemsPerRow + 1) * padding;
+            canvas.height = rows * itemSize + (rows + 1) * padding + headerHeight;
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#0f0c29');
+            gradient.addColorStop(0.5, '#302b63');
+            gradient.addColorStop(1, '#24243e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Header
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 48px "Cormorant Garamond", serif';
+            ctx.textAlign = 'center';
+            const bundleName = document.getElementById('bundleName').value || 'Custom Bundle';
+            ctx.fillText(bundleName, canvas.width / 2, 60);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.font = '24px Montserrat, sans-serif';
+            const bundleDesc = document.getElementById('bundleDescription').value;
+            if (bundleDesc) {
+                ctx.fillText(bundleDesc, canvas.width / 2, 100);
+            }
+            
+            // Load and draw images
+            const imagePromises = bundleItems.map((item, index) => {
+                return new Promise((resolve) => {
+                    const row = Math.floor(index / itemsPerRow);
+                    const col = index % itemsPerRow;
+                    const x = col * itemSize + (col + 1) * padding;
+                    const y = row * itemSize + (row + 1) * padding + headerHeight;
+                    
+                    if (item.image && item.image.startsWith('http')) {
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous';
+                        img.onload = () => {
+                            // Draw image with border
+                            ctx.save();
+                            ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
+                            ctx.shadowBlur = 15;
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                            ctx.fillRect(x, y, itemSize, itemSize);
+                            ctx.drawImage(img, x + 10, y + 10, itemSize - 20, itemSize - 130);
+                            ctx.restore();
+                            
+                            // Item details
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                            ctx.fillRect(x + 10, y + itemSize - 120, itemSize - 20, 110);
+                            
+                            ctx.fillStyle = '#ffd700';
+                            ctx.font = 'bold 18px Montserrat';
+                            ctx.textAlign = 'left';
+                            ctx.fillText(item.sku, x + 20, y + itemSize - 90);
+                            
+                            ctx.fillStyle = 'white';
+                            ctx.font = '14px Montserrat';
+                            const nameLines = wrapText(ctx, item.name, itemSize - 40);
+                            nameLines.slice(0, 2).forEach((line, i) => {
+                                ctx.fillText(line, x + 20, y + itemSize - 65 + i * 18);
+                            });
+                            
+                            ctx.fillStyle = '#48bb78';
+                            ctx.font = 'bold 20px Montserrat';
+                            ctx.fillText(`$${item.price.toFixed(2)}`, x + 20, y + itemSize - 20);
+                            
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            drawPlaceholder(ctx, x, y, itemSize, item);
+                            resolve();
+                        };
+                        img.src = item.image;
+                    } else {
+                        drawPlaceholder(ctx, x, y, itemSize, item);
+                        resolve();
+                    }
+                });
+            });
+            
+            await Promise.all(imagePromises);
+            
+            // Footer
+            const subtotal = bundleItems.reduce((sum, item) => sum + item.price, 0);
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const total = subtotal * (1 - discount / 100);
+            
+            const footerY = canvas.height - 40;
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+            ctx.fillRect(0, footerY - 50, canvas.width, 90);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Montserrat';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${bundleItems.length} Items • `, canvas.width / 2 - 100, footerY);
+            
+            if (discount > 0) {
+                ctx.fillStyle = '#ef4444';
+                ctx.fillText(`${discount}% OFF • `, canvas.width / 2 + 30, footerY);
+            }
+            
+            ctx.fillStyle = '#48bb78';
+            ctx.font = 'bold 28px Montserrat';
+            ctx.fillText(`$${total.toFixed(2)}`, canvas.width / 2 + (discount > 0 ? 150 : 80), footerY);
+            
+            // Show preview
+            const preview = document.getElementById('previewImage');
+            preview.src = canvas.toDataURL('image/png');
+            document.getElementById('previewSection').classList.remove('hidden');
+            
+            showToast('✅ Bundle image generated!');
+        }
+        
+        function drawPlaceholder(ctx, x, y, itemSize, item) {
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.1)';
+            ctx.fillRect(x, y, itemSize, itemSize);
+            
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+            ctx.font = '80px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('💎', x + itemSize / 2, y + itemSize / 2 - 40);
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(x + 10, y + itemSize - 120, itemSize - 20, 110);
+            
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 18px Montserrat';
+            ctx.textAlign = 'left';
+            ctx.fillText(item.sku, x + 20, y + itemSize - 90);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Montserrat';
+            const nameLines = wrapText(ctx, item.name, itemSize - 40);
+            nameLines.slice(0, 2).forEach((line, i) => {
+                ctx.fillText(line, x + 20, y + itemSize - 65 + i * 18);
+            });
+            
+            ctx.fillStyle = '#48bb78';
+            ctx.font = 'bold 20px Montserrat';
+            ctx.fillText(`$${item.price.toFixed(2)}`, x + 20, y + itemSize - 20);
+        }
+        
+        function wrapText(ctx, text, maxWidth) {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = words[0];
+            
+            for (let i = 1; i < words.length; i++) {
+                const testLine = currentLine + ' ' + words[i];
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth) {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+        
+        // Download bundle image
+        function downloadBundleImage() {
+            const canvas = document.getElementById('bundleCanvas2D');
+            const bundleName = document.getElementById('bundleName').value || 'Custom_Bundle';
+            const link = document.createElement('a');
+            link.download = `${bundleName.replace(/\s+/g, '_')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('💾 Image downloaded!');
+        }
+        
+        // Export to Excel
+        function exportToExcel() {
+            const subtotal = bundleItems.reduce((sum, item) => sum + item.price, 0);
+            const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+            const total = subtotal * (1 - discount / 100);
+            
+            const bundleName = document.getElementById('bundleName').value || 'Custom Bundle';
+            const bundleDesc = document.getElementById('bundleDescription').value || '';
+            
+            let text = `BUNDLE: ${bundleName}\n`;
+            text += `DESCRIPTION: ${bundleDesc}\n\n`;
+            text += `ITEMS (${bundleItems.length}):\n`;
+            bundleItems.forEach(item => {
+                text += `${item.sku}\t${item.name}\t$${item.price.toFixed(2)}\n`;
+            });
+            text += `\nSUBTOTAL: $${subtotal.toFixed(2)}\n`;
+            text += `DISCOUNT: ${discount}%\n`;
+            text += `TOTAL: $${total.toFixed(2)}`;
+            
+            navigator.clipboard.writeText(text);
+            showToast('📋 Bundle info copied! Paste into Excel or Notes.');
+        }
+        
+        // Clear bundle
+        function clearBundle() {
+            if (confirm('Clear this bundle?')) {
+                bundleItems = [];
+                renderBundle();
+                updateSummary();
+                document.getElementById('bundleName').value = '';
+                document.getElementById('bundleDescription').value = '';
+                document.getElementById('previewSection').classList.add('hidden');
+                showToast('🗑️ Bundle cleared');
+            }
+        }
+        
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            if (type === 'error') toast.style.background = 'rgba(239, 68, 68, 0.95)';
+            if (type === 'warning') toast.style.background = 'rgba(245, 158, 11, 0.95)';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Enter key support
+        document.getElementById('quickAddInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') quickAddItem();
+        });
+    </script>
+</body>
+</html>
