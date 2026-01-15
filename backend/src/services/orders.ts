@@ -77,13 +77,42 @@ export async function createOrderRecord(
     throw new Error(orderErr.message)
   }
 
-  const lineItems = items.map(it => ({
-    order_id: order.id,
-    product_id: it.product_id || null,
-    product_name: it.product_name,
-    product_price: Number(it.product_price.toFixed(2)),
-    quantity: it.quantity
-  }))
+  // Helper to validate UUIDs
+  const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+
+  // Resolve product IDs that are SKUs (e.g. Shopify IDs)
+  const resolvedProductIds = new Map<string, string>() // originalId -> realUuid
+  const skusToResolve = items
+    .map(it => it.product_id)
+    .filter(id => id && !isUuid(id)) as string[]
+
+  if (skusToResolve.length > 0) {
+    const { data: found } = await supabase
+      .from('products')
+      .select('id, sku')
+      .in('sku', skusToResolve)
+    
+    found?.forEach(p => {
+      resolvedProductIds.set(p.sku, p.id)
+    })
+  }
+
+  const lineItems = items.map(it => {
+    let finalProductId = it.product_id || null
+    
+    // If ID is provided but not a UUID, try to map it from resolved SKUs
+    if (finalProductId && !isUuid(finalProductId)) {
+       finalProductId = resolvedProductIds.get(finalProductId) || null
+    }
+
+    return {
+      order_id: order.id,
+      product_id: finalProductId,
+      product_name: it.product_name,
+      product_price: Number(it.product_price.toFixed(2)),
+      quantity: it.quantity
+    }
+  })
 
   const { error: itemsErr } = await supabase
     .from('order_items')
