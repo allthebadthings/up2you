@@ -319,13 +319,22 @@ export default function Checkout() {
   const [orderId, setOrderId] = useState<string>('')
 
   useEffect(() => {
-    (async () => {
-      const res = await fetch('/api/stripe/public-key')
-      const data = await res.json()
-      if (data.publishableKey) {
-        setStripePromise(loadStripe(data.publishableKey))
-      }
-    })()
+    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    if (key) {
+      setStripePromise(loadStripe(key))
+    } else {
+      (async () => {
+        try {
+          const res = await fetch('/api/stripe/public-key')
+          const data = await res.json()
+          if (data.publishableKey) {
+            setStripePromise(loadStripe(data.publishableKey))
+          }
+        } catch (e) {
+          console.error('Failed to load Stripe key', e)
+        }
+      })()
+    }
   }, [])
 
   return (
