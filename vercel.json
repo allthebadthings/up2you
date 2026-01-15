@@ -1,0 +1,8 @@
+{
+  "installCommand": "npm install && npm install --prefix jewelry",
+  "buildCommand": "npm run build --prefix jewelry",
+  "outputDirectory": "jewelry/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

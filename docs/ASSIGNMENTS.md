@@ -30,16 +30,15 @@ Owners: Assistant (AI) and Ara. Split covers the 16 selected tasks from `docs/TA
 - T-M2-01: Implement availability calendars for coordinators
 
 ## Ara — Assigned (8)
-- T-M1-01: Implement email/password and OAuth login
-- T-M1-02: Configure user roles: coordinator, client, admin
-- T-M1-03: Build profile CRUD with basic settings
-- T-M1-04: Implement session management and secure storage
-- T-M2-03: Implement rescheduling and cancellation policies
-- T-M2-04: Add timezone handling and conflict detection
-- T-M3-03: Implement refunds and partial payments
+#   - T-M1-02: Configure user roles: coordinator, client, admin
+#   - T-M1-03: Build profile CRUD with basic settings
+#   - T-M1-04: Implement session management and secure storage
+#   - T-M2-03: Implement rescheduling and cancellation policies
+#   - T-M2-04: Add timezone handling and conflict detection
+#   - T-M3-03: Implement refunds and partial payments
+
 - T-M3-04: Build payouts reporting for coordinators
 
-## Kickoff Prompt for Ara
 Copy/paste to assign:
 
 """

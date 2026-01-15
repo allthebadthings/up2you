@@ -1,9 +1,15 @@
-import { useState } from 'react'
-import { CreditCard, Lock, Truck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Lock, Truck } from 'lucide-react'
 import { useCart } from '../store/cart'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
+import { useNavigate } from 'react-router-dom'
 
-export default function Checkout() {
+function CheckoutInner({ clientSecret, setClientSecret, setOrderId }: { clientSecret: string, setClientSecret: (v: string) => void, setOrderId: (v: string) => void }) {
   const { items, total, clearCart } = useCart()
+  const navigate = useNavigate()
+  const stripe = useStripe()
+  const elements = useElements()
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -12,10 +18,10 @@ export default function Checkout() {
     city: '',
     state: '',
     zipCode: '',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: ''
   })
+  const [orderIdLocal, setOrderIdLocal] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -24,11 +30,60 @@ export default function Checkout() {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Integrate with Stripe payment processing
-    clearCart()
-    window.location.href = '/confirmation'
+  const startPayment = async () => {
+    setLoading(true)
+    try {
+      const payloadItems = items.map(it => ({
+        product_id: it.product.id,
+        product_name: it.product.name,
+        product_price: it.product.price,
+        quantity: it.quantity
+      }))
+      const shipping = {
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zipCode
+      }
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payloadItems, shipping })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Order creation failed')
+      setClientSecret(data.clientSecret)
+      setOrderId(data.orderId)
+      setOrderIdLocal(data.orderId)
+    } catch (e) {
+      alert((e as any).message || 'Failed to start payment')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const confirmPayment = async () => {
+    if (!stripe || !elements) return
+    setLoading(true)
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required'
+      })
+      if (error) {
+        alert(error.message || 'Payment failed')
+        return
+      }
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        clearCart()
+        navigate(`/confirmation?order=${encodeURIComponent(orderIdLocal)}`)
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const calculateBundleSavings = () => {
@@ -143,56 +198,38 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* Payment Information */}
+            {/* Payment */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Information</h2>
-              <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment</h2>
+              {!clientSecret ? (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={formData.cardNumber}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    />
-                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  </div>
+                  <p className="text-sm text-gray-600 mb-4">We’ll create your secure payment session.</p>
+                  <button
+                    type="button"
+                    onClick={startPayment}
+                    className="bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition"
+                    disabled={loading}
+                  >
+                    {loading ? 'Preparing…' : 'Continue to Payment'}
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                    <input
-                      type="text"
-                      name="expiryDate"
-                      placeholder="MM/YY"
-                      value={formData.expiryDate}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    />
+              ) : (
+                <div className="space-y-4">
+                  <PaymentElement />
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">Your payment information is encrypted and secure</span>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-                    <input
-                      type="text"
-                      name="cvv"
-                      placeholder="123"
-                      value={formData.cvv}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={confirmPayment}
+                    className="bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition"
+                    disabled={loading || !stripe || !elements}
+                  >
+                    {loading ? 'Processing…' : 'Complete Purchase'}
+                  </button>
                 </div>
-              </div>
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg flex items-center gap-2">
-                <Lock className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-600">Your payment information is encrypted and secure</span>
-              </div>
+              )}
             </div>
           </div>
 
@@ -253,14 +290,17 @@ export default function Checkout() {
               </div>
             )}
 
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              className="w-full mt-6 bg-yellow-600 text-white py-3 rounded-lg font-semibold hover:bg-yellow-700 transition flex items-center justify-center gap-2"
-            >
-              <Lock className="w-4 h-4" />
-              Complete Purchase
-            </button>
+            {!clientSecret && (
+              <button
+                type="button"
+                onClick={startPayment}
+                className="w-full mt-6 bg-yellow-600 text-white py-3 rounded-lg font-semibold hover:bg-yellow-700 transition flex items-center justify-center gap-2"
+                disabled={loading}
+              >
+                <Lock className="w-4 h-4" />
+                Continue to Payment
+              </button>
+            )}
 
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
               <Truck className="w-4 h-4 text-blue-600" />
@@ -270,5 +310,27 @@ export default function Checkout() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Checkout() {
+  const [stripePromise, setStripePromise] = useState<any>(null)
+  const [clientSecret, setClientSecret] = useState<string>('')
+  const [orderId, setOrderId] = useState<string>('')
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch('/api/stripe/public-key')
+      const data = await res.json()
+      if (data.publishableKey) {
+        setStripePromise(loadStripe(data.publishableKey))
+      }
+    })()
+  }, [])
+
+  return (
+    <Elements stripe={stripePromise} options={clientSecret ? { clientSecret } : undefined}>
+      <CheckoutInner clientSecret={clientSecret} setClientSecret={setClientSecret} setOrderId={setOrderId} />
+    </Elements>
   )
 }

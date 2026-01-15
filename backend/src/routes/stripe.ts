@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import Stripe from 'stripe';
+import { supabase } from '../db/supabase.js';
 import dotenv from 'dotenv';
 import express from 'express';
 
@@ -36,6 +37,11 @@ router.get('/config', (req: Request, res: Response) => {
   res.json({ configured: Boolean(process.env.STRIPE_SECRET_KEY), webhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET) });
 });
 
+// Publishable key for frontend
+router.get('/public-key', (req: Request, res: Response) => {
+  res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '' })
+})
+
 // Webhook Handler
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
   const sig = req.headers['stripe-signature'];
@@ -57,10 +63,25 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req: R
 
   // Handle the event
   switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log('PaymentIntent was successful!', paymentIntent.id);
+    case 'payment_intent.succeeded': {
+      const paymentIntent = event.data.object as any;
+      try {
+        const { data: order, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('stripe_payment_intent_id', String(paymentIntent.id))
+          .single()
+        if (!error && order) {
+          await supabase
+            .from('orders')
+            .update({ payment_status: 'paid', status: 'processing' })
+            .eq('id', order.id)
+        }
+      } catch (e) {
+        console.error('Order update failed for intent', paymentIntent.id, e)
+      }
       break;
+    }
     default:
       console.log(`Unhandled event type ${event.type}`);
   }

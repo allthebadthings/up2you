@@ -8,6 +8,7 @@ import { shopifyRoutes } from './routes/shopify.js';
 import { ebayRoutes } from './routes/ebay.js';
 import { requireAdmin } from './middleware/auth.js';
 import { adminRoutes } from './routes/admin/index.js';
+import { ordersRoutes } from './routes/orders.js';
 import crypto from 'node:crypto';
 
 dotenv.config();
@@ -46,7 +47,8 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/ebay', ebayRoutes);
 app.use('/api/admin', requireAdmin, adminRoutes);
-console.log('Routes mounted: /api/stripe, /api/shopify, /api/ebay, /api/admin')
+app.use('/api/orders', ordersRoutes);
+console.log('Routes mounted: /api/stripe, /api/shopify, /api/ebay, /api/admin, /api/orders')
 
 
 app.get('/api/auth/google/start', (req, res) => {
